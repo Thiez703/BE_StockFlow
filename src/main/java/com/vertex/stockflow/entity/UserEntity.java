@@ -47,6 +47,10 @@ public class UserEntity {
     @Builder.Default
     private Boolean isActive = true;
 
+    @Column(name = "must_change_password", nullable = false)
+    @Builder.Default
+    private Boolean mustChangePassword = false;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -61,6 +65,9 @@ public class UserEntity {
 
         if (isActive == null) {
             isActive = true;
+        }
+        if (mustChangePassword == null) {
+            mustChangePassword = false;
         }
     }
 

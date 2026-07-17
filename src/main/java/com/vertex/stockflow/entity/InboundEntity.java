@@ -47,6 +47,13 @@ public class InboundEntity {
     @Column(name = "void_reason", length = 255)
     private String voidReason;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "voided_by")
+    private UserEntity voidedBy;
+
+    @Column(name = "voided_at")
+    private LocalDateTime voidedAt;
+
     @Column(length = 255)
     private String note;
 
