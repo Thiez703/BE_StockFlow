@@ -38,6 +38,14 @@ public class ProductEntity {
     @Column(nullable = false, length = 255)
     private String name;
 
+    @Column(name = "min_stock", nullable = false)
+    @Builder.Default
+    private Integer minStock = 0;
+
+    @Column(name = "max_stock", nullable = false)
+    @Builder.Default
+    private Integer maxStock = 0;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default

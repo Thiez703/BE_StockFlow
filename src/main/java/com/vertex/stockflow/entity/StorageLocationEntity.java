@@ -3,8 +3,15 @@ package com.vertex.stockflow.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
-@Table(name = "storage_locations")
+@Table(
+        name = "storage_locations",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_storage_locations_warehouse_location", columnNames = {"warehouse_id", "location_code"})
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -25,4 +32,22 @@ public class StorageLocationEntity {
 
     @Column(name = "location_code", nullable = false, length = 20)
     private String locationCode;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+        createdAt = now;
+        updatedAt = now;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }
