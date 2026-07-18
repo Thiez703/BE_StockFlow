@@ -208,4 +208,5 @@ mvnw.cmd spring-boot:run
 
 ---
 
-<p align="center"><i>Tài liệu được xây dựng dựa trên bản Đặc tả SRS v1.0. Chúc team code ít bug! 🚀</i></p>
+<p align="center"><i>Tài liệu được xây dựng dựa trên bản Đặc tả S
+RS v1.0. Chúc team code ít bug! 🚀</i></p>
