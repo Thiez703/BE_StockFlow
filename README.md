@@ -160,6 +160,7 @@ mvnw.cmd spring-boot:run
 
 # Trên Linux/Mac
 ./mvnw spring-boot:run
+.\mvnw.cmd spring-boot:run
 ```
 > App chạy mặc định tại: `http://localhost:8080/api`
 
