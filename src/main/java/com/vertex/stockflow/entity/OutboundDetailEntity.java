@@ -3,6 +3,8 @@ package com.vertex.stockflow.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "outbound_details")
 @Getter
@@ -44,4 +46,10 @@ public class OutboundDetailEntity {
 
     @Column(name = "override_reason", length = 255)
     private String overrideReason;
+
+    @Column(name = "unit_price", precision = 12, scale = 2)
+    private BigDecimal unitPrice;
+
+    @Column(name = "total_amount", precision = 15, scale = 2)
+    private BigDecimal totalAmount;
 }

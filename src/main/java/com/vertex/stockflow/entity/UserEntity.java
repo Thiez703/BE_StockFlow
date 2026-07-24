@@ -7,15 +7,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "users",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_users_username",
-                        columnNames = "username"
-                )
-        }
-)
+@Table(name = "users")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -30,8 +22,8 @@ public class UserEntity {
     @Column(name = "full_name", nullable = false, length = 100)
     private String fullName;
 
-    @Column(nullable = false, unique = true, length = 50, updatable = false)
-    private String username;
+    @Column(nullable = false, unique = true, length = 50)
+    private String email;
 
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;

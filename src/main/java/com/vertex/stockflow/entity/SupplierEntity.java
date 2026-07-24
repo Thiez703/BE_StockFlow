@@ -19,8 +19,14 @@ public class SupplierEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @Column(nullable = false, unique = true, length = 20)
+    private String code;
+
     @Column(nullable = false, length = 100)
     private String name;
+
+    @Column(name = "tax_code", length = 20)
+    private String taxCode;
 
     @Column(name = "contact_person", length = 100)
     private String contactPerson;
@@ -33,6 +39,9 @@ public class SupplierEntity {
 
     @Column(length = 255)
     private String address;
+
+    @Column(length = 255)
+    private String note;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
