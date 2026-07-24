@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Table(
         name = "products",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uk_products_barcode", columnNames = "barcode")
+                @UniqueConstraint(name = "uk_products_code", columnNames = "code")
         }
 )
 @Getter
@@ -32,19 +32,14 @@ public class ProductEntity {
     @JoinColumn(name = "base_unit_id", nullable = false)
     private UnitEntity baseUnit;
 
-    @Column(nullable = false, unique = true, length = 20)
-    private String barcode;
+    @Column(nullable = false, unique = true, length = 30)
+    private String code;
 
     @Column(nullable = false, length = 255)
     private String name;
 
-    @Column(name = "min_stock", nullable = false)
-    @Builder.Default
-    private Integer minStock = 0;
-
-    @Column(name = "max_stock", nullable = false)
-    @Builder.Default
-    private Integer maxStock = 0;
+    @Column(name = "min_stock")
+    private Integer minStock;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

@@ -44,6 +44,9 @@ public class InboundDetailEntity {
     @Column(name = "quantity_base", nullable = false)
     private Integer quantityBase;
 
-    @Column(name = "unit_price", precision = 12, scale = 2)
+    @Column(name = "unit_price", nullable = false, precision = 12, scale = 2)
     private BigDecimal unitPrice;
+
+    @Column(name = "total_amount", precision = 15, scale = 2)
+    private BigDecimal totalAmount;
 }

@@ -47,6 +47,9 @@ public class AbnormalStockEntity {
     @Column(name = "reject_reason", length = 255)
     private String rejectReason;
 
+    @Column(length = 255)
+    private String note;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

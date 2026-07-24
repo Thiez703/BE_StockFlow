@@ -1,5 +1,6 @@
 package com.vertex.stockflow.entity;
 
+import com.vertex.stockflow.common.enums.StatusEnum;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -28,6 +29,11 @@ public class UnitEntity {
 
     @Column(nullable = false, length = 50)
     private String name;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private StatusEnum status = StatusEnum.ACTIVE;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
