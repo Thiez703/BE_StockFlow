@@ -6,9 +6,9 @@ import com.vertex.stockflow.repository.RefreshTokenRepository;
 import com.vertex.stockflow.repository.UserRepository;
 import com.vertex.stockflow.service.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 
 @Service
 @Transactional
@@ -26,7 +26,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         refreshTokenRepository.deleteByUser(userEntity);
-
+        refreshTokenRepository.flush();
         return refreshTokenRepository.save(
                 RefreshTokenEntity.builder()
                         .user(userEntity)
