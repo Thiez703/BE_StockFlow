@@ -26,6 +26,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         refreshTokenRepository.deleteByUser(userEntity);
+        refreshTokenRepository.flush();
 
         return refreshTokenRepository.save(
                 RefreshTokenEntity.builder()
