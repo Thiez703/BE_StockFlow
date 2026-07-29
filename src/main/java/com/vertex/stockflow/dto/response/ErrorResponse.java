@@ -1,22 +1,22 @@
-package com.vertex.stockflow.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
+
+import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.Map;
-
+//format lỗi thống nhất toàn hệ thống
 @Getter
 @Setter
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 @Builder
 public class ErrorResponse {
-    private int status;
-    private String message;
-    private Map<String, String> errors;
     private LocalDateTime timestamp;
+    private int status;
+    private String error;
+    private String message;
+    private String path;
 }

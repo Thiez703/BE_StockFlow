@@ -35,4 +35,10 @@ public class AuditLogEntity {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    @PrePersist
+    void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
+    //Tu dong luu time tao vao datebase
 }
