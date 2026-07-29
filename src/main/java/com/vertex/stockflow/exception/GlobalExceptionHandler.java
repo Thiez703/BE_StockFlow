@@ -16,12 +16,12 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex) {
+    public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage(), null);
     }
 
     @ExceptionHandler(DuplicateResourceException.class)
-    public ResponseEntity<ErrorResponse> handleDuplicateResource(DuplicateResourceException ex) {
+    public ResponseEntity<ErrorResponse> handleDuplicate(DuplicateResourceException ex) {
         return build(HttpStatus.CONFLICT, ex.getMessage(), null);
     }
 
@@ -40,7 +40,12 @@ public class GlobalExceptionHandler {
     }
 
     private ResponseEntity<ErrorResponse> build(HttpStatus status, String message, Map<String, String> errors) {
-        ErrorResponse body = new ErrorResponse(status.value(), message, errors, LocalDateTime.now());
+        ErrorResponse body = ErrorResponse.builder()
+                .status(status.value())
+                .message(message)
+                .errors(errors)
+                .timestamp(LocalDateTime.now())
+                .build();
         return ResponseEntity.status(status).body(body);
     }
 }
