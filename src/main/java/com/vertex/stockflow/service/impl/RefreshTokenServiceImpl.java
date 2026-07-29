@@ -23,7 +23,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     public RefreshTokenEntity createRefreshToken(String userEmail) {
 
         UserEntity userEntity = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
 
         refreshTokenRepository.deleteByUser(userEntity);
         refreshTokenRepository.flush();
@@ -39,12 +39,12 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     @Override
     public RefreshTokenEntity verifyRefreshToken(String token){
         RefreshTokenEntity refreshTokenEntity = refreshTokenRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Refresh token not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy refresh token"));
 
         // Nếu thời điểm hết hạn < thời điểm hiện tại → xoa token đã hết hạn
         if (refreshTokenEntity.getExpiriesAt() < System.currentTimeMillis()) {
             refreshTokenRepository.delete(refreshTokenEntity);
-            throw new RuntimeException("Refresh token has expired");
+            throw new RuntimeException("Refresh token đã hết hạn");
         }
         return refreshTokenEntity;
     }
