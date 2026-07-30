@@ -23,7 +23,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
+@EnableMethodSecurity // <-- thêm dòng này để @PreAuthorize có hiệu lực
 @RequiredArgsConstructor
 public class SecurityConfig {
 
