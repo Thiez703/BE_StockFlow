@@ -7,8 +7,8 @@ import com.vertex.stockflow.dto.request.CreateUserRequest;
 import com.vertex.stockflow.dto.request.UpdateUserRequest;
 import com.vertex.stockflow.dto.response.UserManagementResponse;
 import com.vertex.stockflow.entity.UserEntity;
-import com.vertex.stockflow.exception.DuplicateUsernameException;
-import com.vertex.stockflow.exception.UserNotFoundException;
+import com.vertex.stockflow.exception.DuplicateResourceException;
+import com.vertex.stockflow.exception.ResourceNotFoundException;
 import com.vertex.stockflow.mapper.UserMapper;
 import com.vertex.stockflow.repository.UserRepository;
 import com.vertex.stockflow.service.AuditLogService;
@@ -35,7 +35,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserManagementResponse create(CreateUserRequest req, User actor) {
         if (userRepository.existsByEmail(req.getEmail())) {
-            throw new DuplicateUsernameException(req.getEmail());
+            throw new DuplicateResourceException("Email already exists: " + req.getEmail());
         }
 
         String rawPassword = passwordGenerator.generate();
@@ -60,7 +60,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserManagementResponse update(Integer id, UpdateUserRequest req, User actor) {
         UserEntity user = userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException(id));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         user.setFullName(req.getFullName());
         user.setPhone(req.getPhone());
         userRepository.save(user);
@@ -73,7 +73,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void lock(Integer id, User actor) {
-        UserEntity user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+        UserEntity user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         user.setIsActive(false);
         userRepository.save(user);
         auditLogService.log(actor, AuditAction.LOCK_USER, "users", id, "Khóa tài khoản " + user.getEmail());
@@ -82,7 +82,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void unlock(Integer id, User actor) {
-        UserEntity user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+        UserEntity user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         user.setIsActive(true);
         userRepository.save(user);
         auditLogService.log(actor, AuditAction.UNLOCK_USER, "users", id, "Mở khóa tài khoản " + user.getEmail());
@@ -91,7 +91,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserManagementResponse assignRole(Integer id, AssignRoleRequest req, User actor) {
-        UserEntity user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+        UserEntity user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         String oldRole = user.getRole().name();
         user.setRole(req.getRole());
         userRepository.save(user);
@@ -104,7 +104,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void resetPassword(Integer id, User actor) {
-        UserEntity user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+        UserEntity user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         String rawPassword = passwordGenerator.generate();
         user.setPasswordHash(passwordEncoder.encode(rawPassword));
         user.setMustChangePassword(true);

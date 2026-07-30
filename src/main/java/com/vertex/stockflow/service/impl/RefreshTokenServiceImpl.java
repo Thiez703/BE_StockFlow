@@ -2,6 +2,8 @@ package com.vertex.stockflow.service.impl;
 
 import com.vertex.stockflow.entity.RefreshTokenEntity;
 import com.vertex.stockflow.entity.UserEntity;
+import com.vertex.stockflow.exception.IllegalOperationException;
+import com.vertex.stockflow.exception.ResourceNotFoundException;
 import com.vertex.stockflow.repository.RefreshTokenRepository;
 import com.vertex.stockflow.repository.UserRepository;
 import com.vertex.stockflow.service.RefreshTokenService;
@@ -23,7 +25,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     public RefreshTokenEntity createRefreshToken(String userEmail) {
 
         UserEntity userEntity = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+                .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
 
         refreshTokenRepository.deleteByUser(userEntity);
         refreshTokenRepository.flush();
@@ -39,12 +41,12 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     @Override
     public RefreshTokenEntity verifyRefreshToken(String token){
         RefreshTokenEntity refreshTokenEntity = refreshTokenRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy refresh token"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy refresh token"));
 
         // Nếu thời điểm hết hạn < thời điểm hiện tại → xoa token đã hết hạn
         if (refreshTokenEntity.getExpiriesAt() < System.currentTimeMillis()) {
             refreshTokenRepository.delete(refreshTokenEntity);
-            throw new RuntimeException("Refresh token đã hết hạn");
+            throw new IllegalOperationException("Refresh token đã hết hạn");
         }
         return refreshTokenEntity;
     }
@@ -58,9 +60,9 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
     // xóa token khi logout
     @Override
-    public void deleteByEmail(String email) {
-        userRepository.findByEmail(email)
-                .ifPresent(refreshTokenRepository::deleteByUser);
+    public void deleteByToken(String token) {
+        refreshTokenRepository.findByToken(token)
+                .ifPresent(refreshTokenRepository::delete);
     }
 
 }

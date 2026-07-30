@@ -11,5 +11,5 @@ public interface RefreshTokenService {
 
     RefreshTokenEntity rotate(RefreshTokenEntity old);
 
-    void deleteByEmail(String email);
+    void deleteByToken(String token);
 }

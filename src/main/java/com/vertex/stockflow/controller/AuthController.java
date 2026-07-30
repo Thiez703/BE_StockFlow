@@ -23,39 +23,35 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController {
 
-        private final AuthService authService;
-        private final RefreshTokenService refreshTokenService;
+    private final AuthService authService;
+    private final RefreshTokenService refreshTokenService;
     private final UserDetailsService userDetailsService;
     private final JwtService jwtService;
 
     @PostMapping("/login")
-        public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
-            LoginResponse response = authService.login(loginRequest);
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
+        LoginResponse response = authService.login(loginRequest);
 
-            RefreshTokenEntity refreshToken = refreshTokenService.createRefreshToken(loginRequest.getEmail());
-            response.setRefreshtoken(refreshToken.getToken());
+        RefreshTokenEntity refreshToken = refreshTokenService.createRefreshToken(loginRequest.getEmail());
+        response.setRefreshtoken(refreshToken.getToken());
 
-            return ResponseEntity.ok(response);
-        }
+        return ResponseEntity.ok(response);
+    }
 
-        @PostMapping("/refresh")
-        public ResponseEntity<RefreshTokenResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest refreshTokenRequest) {
-           RefreshTokenEntity oldToken = refreshTokenService.verifyRefreshToken(refreshTokenRequest.getRefreshToken());// 1. Kiểm tra token cũ xem còn hạn không
-           RefreshTokenEntity newToken = refreshTokenService.rotate(oldToken); // 2. Xóa token cũ, tạo Refresh Token mới (xoay vòng)
-            UserDetails userDetails = userDetailsService.loadUserByUsername(newToken.getUser().getEmail());// 3. Lấy thông tin User từ DB
-            String newAccessToken = jwtService.generateToken(userDetails);
-            RefreshTokenResponse response = new RefreshTokenResponse(newAccessToken, newToken.getToken()); // 5. Trả về cặp Token mới cho client
-            return ResponseEntity.ok(response);
-        }
+    @PostMapping("/refresh")
+    public ResponseEntity<RefreshTokenResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest refreshTokenRequest) {
+        RefreshTokenEntity oldToken = refreshTokenService.verifyRefreshToken(refreshTokenRequest.getRefreshToken());// 1. Kiểm tra token cũ xem còn hạn không
+        RefreshTokenEntity newToken = refreshTokenService.rotate(oldToken); // 2. Xóa token cũ, tạo Refresh Token mới (xoay vòng)
+        UserDetails userDetails = userDetailsService.loadUserByUsername(newToken.getUser().getEmail());// 3. Lấy thông tin User từ DB
+        String newAccessToken = jwtService.generateToken(userDetails);
+        RefreshTokenResponse response = new RefreshTokenResponse(newAccessToken, newToken.getToken()); // 5. Trả về cặp Token mới cho client
+        return ResponseEntity.ok(response);
+    }
 
-        @PostMapping("/logout")
-        public ResponseEntity<String> logout(@Valid @RequestBody RefreshTokenRequest request) {
-            try {
-                RefreshTokenEntity token = refreshTokenService.verifyRefreshToken(request.getRefreshToken());// Xác minh token xem thuộc về ai
-                refreshTokenService.deleteByEmail(token.getUser().getEmail());// Xoá refresh token của người dùng đó khỏi DB
-            } catch (Exception e) {
-            }
-            return ResponseEntity.ok("Logged out successfully"); // Nếu token đã hết hạn hoặc không tồn tại thì cũng coi như logout thành công
-        }
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(@Valid @RequestBody RefreshTokenRequest request) {
+        refreshTokenService.deleteByToken(request.getRefreshToken());
+        return ResponseEntity.ok("Logged out successfully");
+    }
 
 }
