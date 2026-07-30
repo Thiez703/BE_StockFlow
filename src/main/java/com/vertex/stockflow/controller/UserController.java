@@ -19,42 +19,48 @@ public class UserController {
     //Tự tìm UserService để gán vào
     //Đây là 1 bean
     private final UserService userService;
+
     public UserController(UserService userService) {
         this.userService = userService;
     }
     //Post là tạo mới tài nguyên
 
     @PostMapping
-    public ResponseEntity<UserManagementResponse> create(@Valid @RequestBody CreateUserRequest req,
-                                               @AuthenticationPrincipal User actor) {
-        return ResponseEntity.ok(userService.create(req, actor));
+    public ResponseEntity<UserManagementResponse> create(@Valid @RequestBody CreateUserRequest request,
+                                                         @AuthenticationPrincipal User actor) {
+        return ResponseEntity.ok(userService.create(request, actor));
     }
+
     //Cập nhật
     @PutMapping("/{id}")
     public ResponseEntity<UserManagementResponse> update(@PathVariable Integer id,
-                                               @Valid @RequestBody UpdateUserRequest req,
-                                               @AuthenticationPrincipal User actor) {
-        return ResponseEntity.ok(userService.update(id, req, actor));
+                                                         @Valid @RequestBody UpdateUserRequest request,
+                                                         @AuthenticationPrincipal User actor) {
+        return ResponseEntity.ok(userService.update(id, request, actor));
     }
+
     //Khóa
     @PatchMapping("/{id}/lock")
     public ResponseEntity<Void> lock(@PathVariable Integer id, @AuthenticationPrincipal User actor) {
         userService.lock(id, actor);
         return ResponseEntity.noContent().build();
     }
+
     //Mở khóa
     @PatchMapping("/{id}/unlock")
     public ResponseEntity<Void> unlock(@PathVariable Integer id, @AuthenticationPrincipal User actor) {
         userService.unlock(id, actor);
         return ResponseEntity.noContent().build();
     }
+
     //Phân quyền
     @PatchMapping("/{id}/role")
     public ResponseEntity<UserManagementResponse> assignRole(@PathVariable Integer id,
-                                                   @Valid @RequestBody AssignRoleRequest req,
-                                                   @AuthenticationPrincipal User actor) {
-        return ResponseEntity.ok(userService.assignRole(id, req, actor));
+                                                             @Valid @RequestBody AssignRoleRequest request,
+                                                             @AuthenticationPrincipal User actor) {
+        return ResponseEntity.ok(userService.assignRole(id, request, actor));
     }
+
     //Gửi mk về mail
     @PostMapping("/{id}/reset-password")
     public ResponseEntity<Void> resetPassword(@PathVariable Integer id, @AuthenticationPrincipal User actor) {

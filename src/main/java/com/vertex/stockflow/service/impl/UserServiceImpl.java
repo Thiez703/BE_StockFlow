@@ -33,17 +33,17 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserManagementResponse create(CreateUserRequest req, User actor) {
-        if (userRepository.existsByEmail(req.getEmail())) {
-            throw new DuplicateResourceException("Email already exists: " + req.getEmail());
+    public UserManagementResponse create(CreateUserRequest request, User actor) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new DuplicateResourceException("Email already exists: " + request.getEmail());
         }
 
         String rawPassword = passwordGenerator.generate();
         UserEntity user = UserEntity.builder()
-                .fullName(req.getFullName())
-                .email(req.getEmail())
-                .phone(req.getPhone())
-                .role(req.getRole())
+                .fullName(request.getFullName())
+                .email(request.getEmail())
+                .phone(request.getPhone())
+                .role(request.getRole())
                 .passwordHash(passwordEncoder.encode(rawPassword))
                 .isActive(true)
                 .mustChangePassword(true)
@@ -58,11 +58,11 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserManagementResponse update(Integer id, UpdateUserRequest req, User actor) {
+    public UserManagementResponse update(Integer id, UpdateUserRequest request, User actor) {
         UserEntity user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
-        user.setFullName(req.getFullName());
-        user.setPhone(req.getPhone());
+        user.setFullName(request.getFullName());
+        user.setPhone(request.getPhone());
         userRepository.save(user);
 
         auditLogService.log(actor, AuditAction.UPDATE_USER, "users", id,
@@ -90,14 +90,14 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserManagementResponse assignRole(Integer id, AssignRoleRequest req, User actor) {
+    public UserManagementResponse assignRole(Integer id, AssignRoleRequest request, User actor) {
         UserEntity user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         String oldRole = user.getRole().name();
-        user.setRole(req.getRole());
+        user.setRole(request.getRole());
         userRepository.save(user);
 
         auditLogService.log(actor, AuditAction.CHANGE_ROLE, "users", id,
-                "Đổi vai trò " + user.getEmail() + ": " + oldRole + " -> " + req.getRole());
+                "Đổi vai trò " + user.getEmail() + ": " + oldRole + " -> " + request.getRole());
         return userMapper.toResponse(user);
     }
 

@@ -7,10 +7,10 @@ import com.vertex.stockflow.dto.response.UserManagementResponse;
 import org.springframework.security.core.userdetails.User;
 
 public interface UserService {
-    UserManagementResponse create(CreateUserRequest req, User actor);
-    UserManagementResponse update(Integer id, UpdateUserRequest req, User actor);
+    UserManagementResponse create(CreateUserRequest request, User actor);
+    UserManagementResponse update(Integer id, UpdateUserRequest request, User actor);
     void lock(Integer id, User actor);
     void unlock(Integer id, User actor);
-    UserManagementResponse assignRole(Integer id, AssignRoleRequest req, User actor);
+    UserManagementResponse assignRole(Integer id, AssignRoleRequest request, User actor);
     void resetPassword(Integer id, User actor);
 }

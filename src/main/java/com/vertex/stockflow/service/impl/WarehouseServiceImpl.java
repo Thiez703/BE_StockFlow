@@ -39,7 +39,6 @@ public class WarehouseServiceImpl implements WarehouseService {
 
         WarehouseEntity saved = warehouseRepository.save(warehouse);
 
-        // BR-17: sinh kèm StorageLocation DEFAULT, cùng transaction với việc tạo Warehouse
         storageLocationService.createDefaultLocation(saved);
 
         return toResponse(saved);
