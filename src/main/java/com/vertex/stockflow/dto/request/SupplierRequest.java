@@ -11,6 +11,10 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SupplierRequest {
+    @NotBlank(message = "Mã nhà cung cấp không được để trống")
+    @Size(max = 20, message = "Mã nhà cung cấp tối đa 20 ký tự")
+    private String code;
+
     @NotBlank(message = "Tên nhà cung cấp không được để trống")
     @Size(max = 100, message = "Tên nhà cung cấp tối đa 100 ký tự")
     private String name;

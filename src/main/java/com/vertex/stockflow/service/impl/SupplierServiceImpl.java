@@ -1,139 +1,98 @@
 package com.vertex.stockflow.service.impl;
 
 import com.vertex.stockflow.common.enums.StatusEnum;
-import com.vertex.stockflow.dto.response.PageReponse;
 import com.vertex.stockflow.dto.request.SupplierRequest;
-import com.vertex.stockflow.dto.response.SupplierReponse;
+import com.vertex.stockflow.dto.response.SupplierResponse;
 import com.vertex.stockflow.entity.SupplierEntity;
-import com.vertex.stockflow.exception.SupplierException.DuplicateResourceException;
-import com.vertex.stockflow.exception.SupplierException.ResourceNotFoundException;
+import com.vertex.stockflow.exception.DuplicateResourceException;
+import com.vertex.stockflow.exception.ResourceNotFoundException;
 import com.vertex.stockflow.mapper.SupplierMapper;
 import com.vertex.stockflow.repository.SupplierRepository;
 import com.vertex.stockflow.service.SupplierService;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import org.springframework.data.domain.Pageable;
 import org.springframework.util.StringUtils;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class SupplierServiceImpl implements SupplierService {
-    private static final String CODE_PREFIX = "SUP-";
-
     private final SupplierRepository supplierRepository;
     private final SupplierMapper supplierMapper;
 
     @Override
     @Transactional
-    public SupplierReponse create(SupplierRequest request) {
-        validateDuplicatePhone(request.getPhone(), null);
-        validateDuplicateTaxCode(request.getTaxCode(), null);
+    public SupplierResponse create(SupplierRequest request) {
+        if (supplierRepository.existsByCode(request.getCode())) {
+            throw new DuplicateResourceException("Supplier code already exists: " + request.getCode());
+        }
+        if (StringUtils.hasText(request.getPhone()) && supplierRepository.existsByPhone(request.getPhone())) {
+            throw new DuplicateResourceException("Supplier phone already exists: " + request.getPhone());
+        }
+        if (StringUtils.hasText(request.getTaxCode()) && supplierRepository.existsByTaxCode(request.getTaxCode())) {
+            throw new DuplicateResourceException("Supplier taxCode already exists: " + request.getTaxCode());
+        }
 
-        String code = generateNextCode();
-        SupplierEntity entity = supplierMapper.toEntity(request, code);
-        SupplierEntity saved = supplierRepository.save(entity);
-        return supplierMapper.toReponse(saved);
+        SupplierEntity entity = SupplierEntity.builder()
+                .code(request.getCode())
+                .name(request.getName())
+                .taxCode(request.getTaxCode())
+                .contactPerson(request.getContactPerson())
+                .phone(request.getPhone())
+                .email(request.getEmail())
+                .address(request.getAddress())
+                .note(request.getNote())
+                .build();
+        return supplierMapper.toResponse(supplierRepository.save(entity));
     }
 
     @Override
     @Transactional
-    public SupplierReponse update(Integer id, SupplierRequest request) {
-        SupplierEntity entity = findEntityById(id);
-        validateDuplicatePhone(request.getPhone(), id);
-        validateDuplicateTaxCode(request.getTaxCode(), id);
+    public SupplierResponse update(Integer id, SupplierRequest request) {
+        SupplierEntity entity = supplierRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with id: " + id));
 
-        supplierMapper.updateEntity(entity, request);
-        return supplierMapper.toReponse(entity);
+        if (StringUtils.hasText(request.getPhone()) && supplierRepository.existsByPhoneAndIdNot(request.getPhone(), id)) {
+            throw new DuplicateResourceException("Supplier phone already exists: " + request.getPhone());
+        }
+        if (StringUtils.hasText(request.getTaxCode()) && supplierRepository.existsByTaxCodeAndIdNot(request.getTaxCode(), id)) {
+            throw new DuplicateResourceException("Supplier taxCode already exists: " + request.getTaxCode());
+        }
+
+        entity.setName(request.getName());
+        entity.setTaxCode(request.getTaxCode());
+        entity.setContactPerson(request.getContactPerson());
+        entity.setPhone(request.getPhone());
+        entity.setEmail(request.getEmail());
+        entity.setAddress(request.getAddress());
+        entity.setNote(request.getNote());
+        return supplierMapper.toResponse(entity);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public SupplierReponse getById(Integer id) {
-        return supplierMapper.toReponse((findEntityById(id)));
+    public SupplierResponse getById(Integer id) {
+        SupplierEntity entity = supplierRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with id: " + id));
+        return supplierMapper.toResponse(entity);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public PageReponse<SupplierReponse> search(String keyword, StatusEnum status, Pageable pageable) {
-        Specification<SupplierEntity> spec = Specification
-                .where(hasKeyword(keyword))
-                .and(hasStatus(status));
-
-        Page<SupplierReponse> page = supplierRepository.findAll(spec, pageable)
-                .map(supplierMapper::toReponse);
-
-        return PageReponse.from(page);
+    public List<SupplierResponse> getAll() {
+        return supplierRepository.findAll().stream()
+                .map(supplierMapper::toResponse)
+                .toList();
     }
 
     @Override
     @Transactional
-    public SupplierReponse delete(Integer id) {
-        SupplierEntity entity = findEntityById(id);
+    public SupplierResponse delete(Integer id) {
+        SupplierEntity entity = supplierRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with id: " + id));
         entity.setStatus(StatusEnum.INACTIVE);
-        return supplierMapper.toReponse(entity);
-    }
-
-    private Specification<SupplierEntity> hasKeyword(String keyword){
-        if (!StringUtils.hasText(keyword)){
-            return null;
-        }
-        String pattern = "%" + keyword.trim().toLowerCase() + "%";
-        return (root, query, cb) -> cb.or(
-                cb.like(cb.lower(root.get("name")), pattern),
-                cb.like(cb.lower(root.get("code")), pattern),
-                cb.like(root.get("phone"), pattern)
-        );
-    }
-    private Specification<SupplierEntity> hasStatus(StatusEnum status){
-        if (status == null){
-            return null;
-        }
-        return (root, query, cb) -> cb.equal(root.get("status"), status);
-    }
-    private SupplierEntity findEntityById(Integer id) {
-        return supplierRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Supplier", "id", id));
-    }
-
-    private void validateDuplicatePhone(String phone, Integer excludeId) {
-        if (!StringUtils.hasText(phone)) {
-            return;
-        }
-        boolean duplicated = (excludeId == null)
-                ? supplierRepository.existsByPhone(phone)
-                : supplierRepository.existsByPhoneAndIdNot(phone, excludeId);
-
-        if (duplicated) {
-            throw new DuplicateResourceException("Supplier", "phone", phone);
-        }
-    }
-
-    private void validateDuplicateTaxCode(String taxCode, Integer excludeId) {
-        if (!StringUtils.hasText(taxCode)) {
-            return;
-        }
-
-        boolean duplicated = (excludeId == null)
-                ? supplierRepository.existsByTaxCode(taxCode)
-                : supplierRepository.existsByTaxCodeAndIdNot(taxCode, excludeId);
-
-        if (duplicated) {
-            throw new DuplicateResourceException("Supplier", "taxCode", taxCode);
-        }
-    }
-
-    private String generateNextCode() {
-        int nexSequence = supplierRepository.findTopByOrderByIdDesc()
-                .map(last -> {
-                    String[] parts = last.getCode().split("-");
-                    int lastSequence = Integer.parseInt(parts[parts.length - 1]);
-                    return lastSequence + 1;
-                })
-                .orElse(1);
-        return String.format("%s%04d", CODE_PREFIX, nexSequence);
+        return supplierMapper.toResponse(entity);
     }
 }
-
