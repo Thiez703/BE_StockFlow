@@ -8,6 +8,9 @@ import java.util.List;
 public interface ProductUnitRepository extends JpaRepository<ProductUnitEntity, Integer> {
     List<ProductUnitEntity> findByProductId(Integer productId);
 
+    // Dùng để kiểm tra Product còn ProductUnit tham chiếu trước khi cho phép xóa.
+    boolean existsByProductId(Integer productId);
+
     boolean existsByProductIdAndUnitId(Integer productId, Integer unitId);
 
     boolean existsByProductIdAndUnitIdAndIdNot(Integer productId, Integer unitId, Integer id);
