@@ -4,19 +4,18 @@ import com.vertex.stockflow.dto.request.LoginRequest;
 import com.vertex.stockflow.dto.request.RefreshTokenRequest;
 import com.vertex.stockflow.dto.response.LoginResponse;
 import com.vertex.stockflow.dto.response.RefreshTokenResponse;
+import com.vertex.stockflow.dto.response.UserResponse;
 import com.vertex.stockflow.entity.RefreshTokenEntity;
 import com.vertex.stockflow.security.JwtService;
 import com.vertex.stockflow.service.AuthService;
 import com.vertex.stockflow.service.RefreshTokenService;
 import jakarta.validation.Valid;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -54,4 +53,10 @@ public class AuthController {
         return ResponseEntity.ok("Logged out successfully");
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> getMe(Authentication authentication) {
+        String email = authentication.getName();
+        UserResponse userResponse = authService.getCurrentUser(email);
+        return ResponseEntity.ok(userResponse);
+    }
 }

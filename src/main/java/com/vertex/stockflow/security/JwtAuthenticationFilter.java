@@ -1,5 +1,6 @@
 package com.vertex.stockflow.security;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,7 +36,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         String token = authHeader.substring(7);
-        String email = jwtService.extractEmail(token);
+        String email;
+
+        // Token hỏng hoặc hết hạn: trả 401 để client biết đường gọi /auth/refresh.
+        try {
+            email = jwtService.extractEmail(token);
+        } catch (JwtException | IllegalArgumentException ex) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write(
+                    "{\"status\":401,\"errorCode\":\"TOKEN_INVALID\",\"message\":\"Token không hợp lệ hoặc đã hết hạn\"}"
+            );
+            return;
+        }
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(email);

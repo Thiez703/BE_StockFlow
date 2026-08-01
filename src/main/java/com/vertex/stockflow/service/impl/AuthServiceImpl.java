@@ -2,7 +2,9 @@ package com.vertex.stockflow.service.impl;
 
 import com.vertex.stockflow.dto.request.LoginRequest;
 import com.vertex.stockflow.dto.response.LoginResponse;
+import com.vertex.stockflow.dto.response.UserResponse;
 import com.vertex.stockflow.entity.UserEntity;
+import com.vertex.stockflow.exception.ResourceNotFoundException;
 import com.vertex.stockflow.repository.UserRepository;
 import com.vertex.stockflow.security.JwtService;
 import com.vertex.stockflow.service.AuthService;
@@ -32,4 +34,18 @@ public class AuthServiceImpl implements AuthService {
 
         return new LoginResponse(token,null);
     }
+
+    @Override
+    public UserResponse getCurrentUser(String email) {
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        return UserResponse.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .role(user.getRole())
+                .build();
+    }
+
+
 }

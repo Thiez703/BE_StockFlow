@@ -9,7 +9,6 @@ import java.util.List;
 
 public interface LotRepository extends JpaRepository<LotEntity, Integer> {
     boolean existsByProductIdAndLotCode(Integer productId, String lotCode);
-    boolean existsByProductIdAndLotCodeAndIdNot(Integer productId, String lotCode, Integer id);
     List<LotEntity> findByProductId(Integer productId);
-    List<LotEntity>findByStatusAndExpDateBefore(StatusEnum status, LocalDate date);
+    List<LotEntity> findByStatusAndExpDateBefore(StatusEnum status, LocalDate date);
 }

@@ -1,6 +1,7 @@
 package com.vertex.stockflow.config;
 
 import com.vertex.stockflow.security.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,15 +33,34 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(AbstractHttpConfigurer::disable) // tắt khiên chống tấn công mạng kiểu cũ , mục đích cho máy chủ nhẹ hơn
-          .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))//Vô trạng thái, không lưu seesion, mục đích làm nhẹ máy chủ
-              .authorizeHttpRequests(s -> s
-                  .requestMatchers("/api/auth/**").permitAll() // cho phép tất cả các yêu cầu đến /api/auth/** mà không cần xác thực
-                  .requestMatchers("/error").permitAll() //
-                  .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
-                  .anyRequest().authenticated())
-              .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // thêm bộ lọc jwt vào trước bộ lọc xác thực người dùng
-      return http.build();
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(s -> s
+                        .requestMatchers("/api/auth/login", "/api/auth/refresh", "/api/auth/logout").permitAll()
+                        .requestMatchers("/api/auth/me").authenticated()
+                        .requestMatchers("/error").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                        .anyRequest().authenticated())
+                .exceptionHandling(e -> e
+                        // Chưa đăng nhập hoặc token hỏng -> 401 để FE biết đường refresh.
+                        .authenticationEntryPoint((req, res, ex) -> {
+                            res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            res.setContentType("application/json;charset=UTF-8");
+                            res.getWriter().write(
+                                    "{\"status\":401,\"errorCode\":\"UNAUTHORIZED\",\"message\":\"Bạn chưa đăng nhập\"}"
+                            );
+                        })
+                        // Đã đăng nhập nhưng sai vai trò -> 403, FE giữ nguyên phiên.
+                        .accessDeniedHandler((req, res, ex) -> {
+                            res.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            res.setContentType("application/json;charset=UTF-8");
+                            res.getWriter().write(
+                                    "{\"status\":403,\"errorCode\":\"ACCESS_DENIED\",\"message\":\"Bạn không có quyền thực hiện thao tác này\"}"
+                            );
+                        })
+                )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        return http.build();
     }
 
     @Bean
