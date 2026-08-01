@@ -1,11 +1,14 @@
 package com.vertex.stockflow.controller;
 
+import com.vertex.stockflow.common.enums.RoleEnum;
 import com.vertex.stockflow.dto.request.AssignRoleRequest;
 import com.vertex.stockflow.dto.request.CreateUserRequest;
 import com.vertex.stockflow.dto.request.UpdateUserRequest;
 import com.vertex.stockflow.dto.response.UserManagementResponse;
 import com.vertex.stockflow.service.UserService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -67,6 +70,19 @@ public class UserController {
         userService.resetPassword(id, actor);
         return ResponseEntity.noContent().build();
     }
-
+    //danh sach
+    @GetMapping
+    public Page<UserManagementResponse> search(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) RoleEnum role,
+            @RequestParam(required = false) Boolean isActive,
+            Pageable pageable) {
+        return userService.search(keyword, role, isActive, pageable);
+    }
+    //chi tiet
+    @GetMapping("/{id}")
+    public ResponseEntity<UserManagementResponse> getById(@PathVariable Integer id) {
+        return ResponseEntity.ok(userService.getById(id));
+    }
 
 }

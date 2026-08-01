@@ -1,6 +1,8 @@
 package com.vertex.stockflow.service.impl;
 
 import com.vertex.stockflow.common.enums.AuditAction;
+import com.vertex.stockflow.common.enums.RoleEnum;
+import com.vertex.stockflow.common.specification.UserSpecification;
 import com.vertex.stockflow.common.util.PasswordGenerator;
 import com.vertex.stockflow.dto.request.AssignRoleRequest;
 import com.vertex.stockflow.dto.request.CreateUserRequest;
@@ -16,6 +18,9 @@ import com.vertex.stockflow.service.MailService;
 import com.vertex.stockflow.service.UserService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -113,5 +118,17 @@ public class UserServiceImpl implements UserService {
         mailService.sendGeneratedPassword(user.getEmail(), user.getFullName(), rawPassword);
         auditLogService.log(actor, AuditAction.RESET_PASSWORD, "users", id,
                 "Đặt lại mật khẩu cho " + user.getEmail());
+    }
+
+    @Override
+    public Page<UserManagementResponse> search(String keyword, RoleEnum role, Boolean isActive, Pageable pageable) {
+        Specification<UserEntity> spec = UserSpecification.filter(keyword, role, isActive);
+        return userRepository.findAll(spec, pageable).map(userMapper::toResponse);
+    }
+
+    @Override
+    public UserManagementResponse getById(Integer id) {
+        UserEntity user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        return userMapper.toResponse(user);
     }
 }

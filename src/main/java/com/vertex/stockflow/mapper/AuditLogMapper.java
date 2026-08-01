@@ -6,15 +6,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class AuditLogMapper {
     public AuditLogResponse toResponse(AuditLogEntity entity) {
-        AuditLogResponse res = new AuditLogResponse();
-        res.setId(entity.getId());
-        res.setActorEmail(entity.getUser().getEmail());
-        res.setActorFullName(entity.getUser().getFullName());
-        res.setAction(entity.getAction());
-        res.setEntityType(entity.getEntityType());
-        res.setEntityId(entity.getEntityId());
-        res.setDetail(entity.getDetail());
-        res.setCreatedAt(entity.getCreatedAt());
-        return res;
+        AuditLogResponse response = new AuditLogResponse();
+        response.setId(entity.getId());
+        response.setActorEmail(entity.getUser().getEmail());
+        response.setActorFullName(entity.getUser().getFullName());
+        response.setAction(entity.getAction());
+        response.setEntityType(entity.getEntityType());
+        response.setEntityId(entity.getEntityId());
+        response.setDetail(entity.getDetail());
+        response.setCreatedAt(entity.getCreatedAt());
+        return response;
     }
 }
