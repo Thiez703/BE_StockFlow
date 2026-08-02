@@ -102,6 +102,22 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    public ProductResponse deactivate(Integer id) {
+        ProductEntity entity = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Sản phẩm không tồn tại"));
+        entity.setStatus(StatusEnum.INACTIVE);
+        return productMapper.toResponse(productRepository.save(entity));
+    }
+
+    @Override
+    public ProductResponse activate(Integer id) {
+        ProductEntity entity = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Sản phẩm không tồn tại"));
+        entity.setStatus(StatusEnum.ACTIVE);
+        return productMapper.toResponse(productRepository.save(entity));
+    }
+
+    @Override
     public ProductResponse getById(Integer id) {
         ProductEntity entity = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Sản phẩm không tồn tại"));

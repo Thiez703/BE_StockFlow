@@ -71,10 +71,27 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
-    public CustomerResponse delete(Integer id) {
+    public void delete(Integer id) {
+        CustomerEntity entity = customerRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + id));
+        customerRepository.delete(entity);
+    }
+
+    @Override
+    @Transactional
+    public CustomerResponse deactivate(Integer id) {
         CustomerEntity entity = customerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + id));
         entity.setStatus(StatusEnum.INACTIVE);
+        return customerMapper.toResponse(entity);
+    }
+
+    @Override
+    @Transactional
+    public CustomerResponse activate(Integer id) {
+        CustomerEntity entity = customerRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + id));
+        entity.setStatus(StatusEnum.ACTIVE);
         return customerMapper.toResponse(entity);
     }
 }

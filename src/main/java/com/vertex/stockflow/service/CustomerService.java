@@ -10,5 +10,7 @@ public interface CustomerService {
     CustomerResponse update(Integer id, CustomerRequest request);
     CustomerResponse getById(Integer id);
     List<CustomerResponse> getAll();
-    CustomerResponse delete(Integer id);
+    void delete(Integer id);
+    CustomerResponse deactivate(Integer id);
+    CustomerResponse activate(Integer id);
 }

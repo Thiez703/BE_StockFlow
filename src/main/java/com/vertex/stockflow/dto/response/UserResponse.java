@@ -14,4 +14,5 @@ public class UserResponse {
     private String email;
     private RoleEnum role;
     private String phone;
+    private boolean mustChangePassword;
 }

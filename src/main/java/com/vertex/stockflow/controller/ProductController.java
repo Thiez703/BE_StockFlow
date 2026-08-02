@@ -39,6 +39,18 @@ public class ProductController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
+    @PatchMapping("/{id}/deactivate")
+    public ResponseEntity<ProductResponse> deactivate(@PathVariable Integer id) {
+        return ResponseEntity.ok(productService.deactivate(id));
+    }
+
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
+    @PatchMapping("/{id}/activate")
+    public ResponseEntity<ProductResponse> activate(@PathVariable Integer id) {
+        return ResponseEntity.ok(productService.activate(id));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ProductResponse> getById(@PathVariable Integer id) {
         return ResponseEntity.ok(productService.getById(id));

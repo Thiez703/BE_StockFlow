@@ -90,10 +90,27 @@ public class SupplierServiceImpl implements SupplierService {
 
     @Override
     @Transactional
-    public SupplierResponse delete(Integer id) {
+    public void delete(Integer id) {
+        SupplierEntity entity = supplierRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with id: " + id));
+        supplierRepository.delete(entity);
+    }
+
+    @Override
+    @Transactional
+    public SupplierResponse deactivate(Integer id) {
         SupplierEntity entity = supplierRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with id: " + id));
         entity.setStatus(StatusEnum.INACTIVE);
+        return supplierMapper.toResponse(entity);
+    }
+
+    @Override
+    @Transactional
+    public SupplierResponse activate(Integer id) {
+        SupplierEntity entity = supplierRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with id: " + id));
+        entity.setStatus(StatusEnum.ACTIVE);
         return supplierMapper.toResponse(entity);
     }
 }

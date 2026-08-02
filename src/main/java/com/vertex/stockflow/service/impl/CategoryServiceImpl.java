@@ -116,6 +116,22 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    public CategoryResponse deactivate(Integer id) {
+        CategoryEntity entity = categoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Category không tồn tại"));
+        entity.setStatus(StatusEnum.INACTIVE);
+        return categoryMapper.toResponse(categoryRepository.save(entity));
+    }
+
+    @Override
+    public CategoryResponse activate(Integer id) {
+        CategoryEntity entity = categoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Category không tồn tại"));
+        entity.setStatus(StatusEnum.ACTIVE);
+        return categoryMapper.toResponse(categoryRepository.save(entity));
+    }
+
+    @Override
     public CategoryResponse getById(Integer id) {
         CategoryEntity entity = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category không tồn tại"));

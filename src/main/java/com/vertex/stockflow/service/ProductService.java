@@ -9,6 +9,8 @@ public interface ProductService {
     ProductResponse create(ProductRequest request);
     ProductResponse update(Integer id, ProductRequest request);
     void delete(Integer id);
+    ProductResponse deactivate(Integer id);
+    ProductResponse activate(Integer id);
     ProductResponse getById(Integer id);
     List<ProductResponse> getAll();
 }

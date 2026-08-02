@@ -42,7 +42,20 @@ public class SupplierController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    public ResponseEntity<SupplierResponse> delete(@PathVariable Integer id) {
-        return ResponseEntity.ok(supplierService.delete(id));
+    public ResponseEntity<Void> delete(@PathVariable Integer id) {
+        supplierService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/deactivate")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<SupplierResponse> deactivate(@PathVariable Integer id) {
+        return ResponseEntity.ok(supplierService.deactivate(id));
+    }
+
+    @PatchMapping("/{id}/activate")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<SupplierResponse> activate(@PathVariable Integer id) {
+        return ResponseEntity.ok(supplierService.activate(id));
     }
 }

@@ -43,7 +43,20 @@ public class CustomerController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    public ResponseEntity<CustomerResponse> delete(@PathVariable Integer id) {
-        return ResponseEntity.ok(customerService.delete(id));
+    public ResponseEntity<Void> delete(@PathVariable Integer id) {
+        customerService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/deactivate")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<CustomerResponse> deactivate(@PathVariable Integer id) {
+        return ResponseEntity.ok(customerService.deactivate(id));
+    }
+
+    @PatchMapping("/{id}/activate")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<CustomerResponse> activate(@PathVariable Integer id) {
+        return ResponseEntity.ok(customerService.activate(id));
     }
 }

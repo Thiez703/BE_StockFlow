@@ -10,5 +10,7 @@ public interface SupplierService {
     SupplierResponse update(Integer id, SupplierRequest request);
     SupplierResponse getById(Integer id);
     List<SupplierResponse> getAll();
-    SupplierResponse delete(Integer id);
+    void delete(Integer id);
+    SupplierResponse deactivate(Integer id);
+    SupplierResponse activate(Integer id);
 }

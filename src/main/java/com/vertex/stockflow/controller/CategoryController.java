@@ -39,6 +39,18 @@ public class CategoryController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
+    @PatchMapping("/{id}/deactivate")
+    public ResponseEntity<CategoryResponse> deactivate(@PathVariable Integer id) {
+        return ResponseEntity.ok(categoryService.deactivate(id));
+    }
+
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
+    @PatchMapping("/{id}/activate")
+    public ResponseEntity<CategoryResponse> activate(@PathVariable Integer id) {
+        return ResponseEntity.ok(categoryService.activate(id));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<CategoryResponse> getById(@PathVariable Integer id) {
         return ResponseEntity.ok(categoryService.getById(id));

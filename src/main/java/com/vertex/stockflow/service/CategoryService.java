@@ -9,6 +9,8 @@ public interface CategoryService {
     CategoryResponse create(CategoryRequest request);
     CategoryResponse update(Integer id, CategoryRequest request);
     void delete(Integer id);
+    CategoryResponse deactivate(Integer id);
+    CategoryResponse activate(Integer id);
     CategoryResponse getById(Integer id);
     List<CategoryResponse> getAll();
     List<CategoryResponse> getTree();
