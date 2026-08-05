@@ -7,7 +7,6 @@ import com.vertex.stockflow.exception.ResourceNotFoundException;
 import com.vertex.stockflow.repository.*;
 import com.vertex.stockflow.service.InventoryService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

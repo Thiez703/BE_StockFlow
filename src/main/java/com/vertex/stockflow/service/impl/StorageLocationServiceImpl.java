@@ -6,7 +6,6 @@ import com.vertex.stockflow.dto.response.StorageLocationResponse;
 import com.vertex.stockflow.entity.StorageLocationEntity;
 import com.vertex.stockflow.entity.WarehouseEntity;
 import com.vertex.stockflow.exception.DuplicateResourceException;
-import com.vertex.stockflow.exception.IllegalOperationException;
 import com.vertex.stockflow.exception.ResourceNotFoundException;
 import com.vertex.stockflow.repository.StorageLocationRepository;
 import com.vertex.stockflow.repository.WarehouseRepository;
@@ -22,7 +21,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class StorageLocationServiceImpl implements StorageLocationService {
 
-    private static final String DEFAULT_LOCATION_CODE = "DEFAULT";
+    private static final String[] DEFAULT_LOCATION_CODES = {"A01", "A02", "A03", "A04", "A05"};
 
     private final StorageLocationRepository storageLocationRepository;
     private final WarehouseRepository warehouseRepository;
@@ -66,11 +65,6 @@ public class StorageLocationServiceImpl implements StorageLocationService {
     @Override
     public void delete(Integer id) {
         StorageLocationEntity entity = findEntityOrThrow(id);
-
-        if (DEFAULT_LOCATION_CODE.equals(entity.getLocationCode())) {
-            throw new IllegalOperationException("Cannot delete the DEFAULT storage location of a warehouse");
-        }
-
         storageLocationRepository.delete(entity);
     }
 
@@ -97,13 +91,14 @@ public class StorageLocationServiceImpl implements StorageLocationService {
     }
 
     @Override
-    public void createDefaultLocation(WarehouseEntity warehouse) {
-        StorageLocationEntity defaultLocation = StorageLocationEntity.builder()
-                .warehouse(warehouse)
-                .zoneCode(null)
-                .locationCode(DEFAULT_LOCATION_CODE)
-                .build();
-        storageLocationRepository.save(defaultLocation);
+    public void createDefaultLocations(WarehouseEntity warehouse) {
+        for (String code : DEFAULT_LOCATION_CODES) {
+            StorageLocationEntity location = StorageLocationEntity.builder()
+                    .warehouse(warehouse)
+                    .locationCode(code)
+                    .build();
+            storageLocationRepository.save(location);
+        }
     }
 
     private StorageLocationEntity findEntityOrThrow(Integer id) {

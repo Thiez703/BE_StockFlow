@@ -39,7 +39,7 @@ public class WarehouseServiceImpl implements WarehouseService {
 
         WarehouseEntity saved = warehouseRepository.save(warehouse);
 
-        storageLocationService.createDefaultLocation(saved);
+        storageLocationService.createDefaultLocations(saved);
 
         return toResponse(saved);
     }

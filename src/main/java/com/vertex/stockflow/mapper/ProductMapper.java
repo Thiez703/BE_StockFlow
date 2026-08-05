@@ -12,7 +12,7 @@ public class ProductMapper {
                 .code(entity.getCode())
                 .name(entity.getName())
                 .categoryId(entity.getCategory() != null ? entity.getCategory().getId() : null)
-                .baseUnitId(entity.getBaseUnit().getId())
+                .unit(entity.getUnit())
                 .minStock(entity.getMinStock())
                 .status(entity.getStatus())
                 .createdAt(entity.getCreatedAt())

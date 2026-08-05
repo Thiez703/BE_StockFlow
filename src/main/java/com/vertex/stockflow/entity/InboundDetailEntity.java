@@ -34,15 +34,8 @@ public class InboundDetailEntity {
     @JoinColumn(name = "location_id", nullable = false)
     private StorageLocationEntity location;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "unit_id", nullable = false)
-    private UnitEntity unit;
-
     @Column(nullable = false)
     private Integer quantity;
-
-    @Column(name = "quantity_base", nullable = false)
-    private Integer quantityBase;
 
     @Column(name = "unit_price", nullable = false, precision = 12, scale = 2)
     private BigDecimal unitPrice;

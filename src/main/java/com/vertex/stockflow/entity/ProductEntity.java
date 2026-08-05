@@ -28,9 +28,8 @@ public class ProductEntity {
     @JoinColumn(name = "category_id")
     private CategoryEntity category;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "base_unit_id", nullable = false)
-    private UnitEntity baseUnit;
+    @Column(length = 30)
+    private String unit;
 
     @Column(nullable = false, unique = true, length = 30)
     private String code;

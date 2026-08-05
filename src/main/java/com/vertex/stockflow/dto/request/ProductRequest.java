@@ -2,7 +2,6 @@ package com.vertex.stockflow.dto.request;
 
 import com.vertex.stockflow.common.enums.StatusEnum;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
@@ -25,9 +24,9 @@ public class ProductRequest {
     // Cho phép null: category_id trong ProductEntity không nullable = false.
     private Integer categoryId;
 
-    // base_unit_id không cho null trong ProductEntity (nullable = false).
-    @NotNull
-    private Integer baseUnitId;
+    // Đơn vị tính nhập tự do (VARCHAR 30), không quy đổi.
+    @Size(max = 30)
+    private String unit;
 
     // BR-18: min_stock nullable, không ràng buộc thêm.
     private Integer minStock;

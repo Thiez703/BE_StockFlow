@@ -15,9 +15,8 @@ public class ProductResponse {
     private String code;
     private String name;
 
-    // Chỉ trả categoryId/baseUnitId (không trả nguyên entity quan hệ) - cùng convention với CategoryResponse.
     private Integer categoryId;
-    private Integer baseUnitId;
+    private String unit;
 
     private Integer minStock;
     private StatusEnum status;

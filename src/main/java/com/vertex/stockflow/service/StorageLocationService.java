@@ -15,6 +15,6 @@ public interface StorageLocationService {
     List<StorageLocationResponse> getByWarehouseId(Integer warehouseId);
     List<StorageLocationResponse> getAll();
 
-    // Được WarehouseServiceImpl gọi trong cùng transaction khi tạo kho mới (BR-17)
-    void createDefaultLocation(WarehouseEntity warehouse);
+    // Được WarehouseServiceImpl gọi trong cùng transaction khi tạo kho mới — sinh sẵn các khu A01..A05
+    void createDefaultLocations(WarehouseEntity warehouse);
 }

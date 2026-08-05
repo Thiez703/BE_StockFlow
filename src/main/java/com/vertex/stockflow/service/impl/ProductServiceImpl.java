@@ -5,15 +5,12 @@ import com.vertex.stockflow.dto.request.ProductRequest;
 import com.vertex.stockflow.dto.response.ProductResponse;
 import com.vertex.stockflow.entity.CategoryEntity;
 import com.vertex.stockflow.entity.ProductEntity;
-import com.vertex.stockflow.entity.UnitEntity;
 import com.vertex.stockflow.exception.DuplicateResourceException;
 import com.vertex.stockflow.exception.IllegalOperationException;
 import com.vertex.stockflow.exception.ResourceNotFoundException;
 import com.vertex.stockflow.mapper.ProductMapper;
 import com.vertex.stockflow.repository.CategoryRepository;
 import com.vertex.stockflow.repository.ProductRepository;
-import com.vertex.stockflow.repository.ProductUnitRepository;
-import com.vertex.stockflow.repository.UnitRepository;
 import com.vertex.stockflow.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,8 +25,6 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
-    private final UnitRepository unitRepository;
-    private final ProductUnitRepository productUnitRepository;
     private final ProductMapper productMapper;
 
     @Override
@@ -44,14 +39,11 @@ public class ProductServiceImpl implements ProductService {
                     .orElseThrow(() -> new IllegalOperationException("Category không tồn tại"));
         }
 
-        UnitEntity baseUnit = unitRepository.findById(request.getBaseUnitId())
-                .orElseThrow(() -> new IllegalOperationException("Đơn vị cơ sở không tồn tại"));
-
         ProductEntity entity = ProductEntity.builder()
                 .code(request.getCode())
                 .name(request.getName())
                 .category(category)
-                .baseUnit(baseUnit)
+                .unit(request.getUnit())
                 .minStock(request.getMinStock())
                 .status(request.getStatus() != null ? request.getStatus() : StatusEnum.ACTIVE)
                 .build();
@@ -74,13 +66,10 @@ public class ProductServiceImpl implements ProductService {
                     .orElseThrow(() -> new IllegalOperationException("Category không tồn tại"));
         }
 
-        UnitEntity baseUnit = unitRepository.findById(request.getBaseUnitId())
-                .orElseThrow(() -> new IllegalOperationException("Đơn vị cơ sở không tồn tại"));
-
         entity.setCode(request.getCode());
         entity.setName(request.getName());
         entity.setCategory(category);
-        entity.setBaseUnit(baseUnit);
+        entity.setUnit(request.getUnit());
         entity.setMinStock(request.getMinStock());
         if (request.getStatus() != null) {
             entity.setStatus(request.getStatus());
@@ -93,10 +82,6 @@ public class ProductServiceImpl implements ProductService {
     public void delete(Integer id) {
         ProductEntity entity = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Sản phẩm không tồn tại"));
-
-        if (productUnitRepository.existsByProductId(id)) {
-            throw new IllegalOperationException("Không thể xóa: sản phẩm còn đơn vị quy đổi đang sử dụng");
-        }
 
         productRepository.delete(entity);
     }
