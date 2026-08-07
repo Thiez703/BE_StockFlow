@@ -6,6 +6,10 @@ public enum AuditAction {
     LOCK_USER,
     UNLOCK_USER,
     CHANGE_ROLE,
-    RESET_PASSWORD
+    RESET_PASSWORD,
+    STOCKTAKE_APPROVE,
+    STOCKTAKE_REJECT,
+    ABNORMAL_STOCK_APPROVE,
+    ABNORMAL_STOCK_REJECT
 }
 //để không gõ tay chuỗi action

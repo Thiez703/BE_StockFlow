@@ -20,11 +20,15 @@ public class InventoryServiceImpl implements InventoryService {
     private final StorageLocationRepository storageLocationRepository;
     private final InventoryRepository inventoryRepository;
     private final InventoryTransactionRepository inventoryTransactionRepository;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional
     public void updateInventory(Integer warehouseId, Integer productId, Integer lotId, Integer locationId,
-                                Integer quantityDelta, RefTypeEnum refType, Integer refId) {
+                                Integer quantityDelta, RefTypeEnum refType, Integer refId, Integer createdByUserId) {
+
+            UserEntity createdBy = userRepository.findById(createdByUserId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
 
             WarehouseEntity warehouse = warehouseRepository.findById(warehouseId)
                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kho"));
@@ -62,6 +66,7 @@ public class InventoryServiceImpl implements InventoryService {
                     .refId(refId)
                     .quantityChange(quantityDelta)
                     .balanceAfter(newQuantity)
+                    .createdBy(createdBy)
                     .build();
 
             inventoryTransactionRepository.save(transaction);

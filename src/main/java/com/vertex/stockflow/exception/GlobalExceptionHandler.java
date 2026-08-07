@@ -3,6 +3,7 @@ package com.vertex.stockflow.exception;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -68,6 +69,19 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex, HttpServletRequest request) {
         return build(HttpStatus.CONFLICT, "DATA_INTEGRITY_VIOLATION", "Data integrity violation", request, null);
+    }
+
+    // Xung đột ghi đồng thời trên cột version (InventoryEntity/StocktakeEntity/AbnormalStockEntity) -
+    // xảy ra khi 2 request cùng sửa 1 dòng gần như đồng thời (vd 2 người cùng duyệt 1 phiếu).
+    // Bắt ConcurrencyFailureException (lớp cha) thay vì chỉ ObjectOptimisticLockingFailureException,
+    // vì test thực tế 2 request duyệt song song cho thấy MySQL có thể trả về deadlock thật
+    // (CannotAcquireLockException) thay vì optimistic-lock mismatch thuần túy - cả 2 đều là
+    // ConcurrencyFailureException nên cùng 1 handler xử lý được cả 2 trường hợp.
+    // Không xử lý riêng thì sẽ rơi vào handleGeneric() bên dưới -> trả 500 mập mờ thay vì 409 rõ nghĩa.
+    @ExceptionHandler(ConcurrencyFailureException.class)
+    public ResponseEntity<ErrorResponse> handleConcurrencyFailure(ConcurrencyFailureException ex, HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, "CONCURRENT_MODIFICATION",
+                "Dữ liệu vừa được cập nhật bởi người khác, vui lòng tải lại và thử lại", request, null);
     }
 
     //Lỗi ko lg trước(sập mySQL...)

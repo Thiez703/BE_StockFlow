@@ -8,9 +8,9 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(
-        name = "stocktakes",
+        name = "abnormal_stocks",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uk_stocktakes_code", columnNames = "code")
+                @UniqueConstraint(name = "uk_abnormal_stocks_code", columnNames = "code")
         }
 )
 @Getter
@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class StocktakeEntity {
+public class AbnormalStockEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -47,11 +47,9 @@ public class StocktakeEntity {
     @Column(name = "reject_reason", length = 255)
     private String rejectReason;
 
-    @Column(length = 255)
-    private String note;
-
     // Optimistic lock cấp phiếu: chống 2 người duyệt/từ chối cùng lúc trên 1 phiếu
-    // (không có trong SRS gốc, bổ sung theo cùng nguyên tắc BR-13 đang áp dụng cho InventoryEntity).
+    // (không có trong SRS gốc, bổ sung theo cùng nguyên tắc BR-13 đang áp dụng cho InventoryEntity,
+    // và đồng bộ với version vừa thêm vào StocktakeEntity).
     @Version
     @Column(nullable = false)
     @Builder.Default
