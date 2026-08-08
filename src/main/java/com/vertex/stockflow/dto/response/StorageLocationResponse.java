@@ -22,6 +22,8 @@ public class StorageLocationResponse {
 
     private String locationCode;  // mã sinh từ toạ độ: "A-01"
 
+    private String status;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

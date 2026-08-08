@@ -50,4 +50,14 @@ public class StorageLocationController {
     public ResponseEntity<List<StorageLocationResponse>> getAll() {
         return ResponseEntity.ok(storageLocationService.getAll());
     }
+
+    @PatchMapping("/{id}/deactivate")
+    public ResponseEntity<StorageLocationResponse> deactivate(@PathVariable Integer id) {
+        return ResponseEntity.ok(storageLocationService.deactivate(id));
+    }
+
+    @PatchMapping("/{id}/activate")
+    public ResponseEntity<StorageLocationResponse> activate(@PathVariable Integer id) {
+        return ResponseEntity.ok(storageLocationService.activate(id));
+    }
 }

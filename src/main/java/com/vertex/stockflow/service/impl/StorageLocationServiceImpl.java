@@ -1,5 +1,6 @@
 package com.vertex.stockflow.service.impl;
 
+import com.vertex.stockflow.common.enums.StatusEnum;
 import com.vertex.stockflow.dto.request.StorageLocationCreateRequest;
 import com.vertex.stockflow.dto.request.StorageLocationUpdateRequest;
 import com.vertex.stockflow.dto.response.StorageLocationResponse;
@@ -115,6 +116,20 @@ public class StorageLocationServiceImpl implements StorageLocationService {
     }
 
     @Override
+    public StorageLocationResponse deactivate(Integer id) {
+        StorageLocationEntity entity = findEntityOrThrow(id);
+        entity.setStatus(StatusEnum.INACTIVE);
+        return toResponse(storageLocationRepository.save(entity));
+    }
+
+    @Override
+    public StorageLocationResponse activate(Integer id) {
+        StorageLocationEntity entity = findEntityOrThrow(id);
+        entity.setStatus(StatusEnum.ACTIVE);
+        return toResponse(storageLocationRepository.save(entity));
+    }
+
+    @Override
     public void createDefaultLocations(WarehouseEntity warehouse) {
 
         // Gom hết vào 1 List rồi save 1 lần ở cuối, thay vì save từng cái trong vòng lặp.
@@ -168,9 +183,10 @@ public class StorageLocationServiceImpl implements StorageLocationService {
         return new StorageLocationResponse(
                 entity.getId(),
                 entity.getWarehouse().getId(),
-                entity.getRowLabel(),      // MỚI
-                entity.getColIndex(),      // MỚI
+                entity.getRowLabel(),
+                entity.getColIndex(),
                 entity.getLocationCode(),
+                entity.getStatus().name(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );

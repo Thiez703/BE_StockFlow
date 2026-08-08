@@ -26,7 +26,7 @@ public class AbnormalStockController {
     // để tránh viết trùng cùng 1 query ở 2 controller (xem Bước 15 trong kế hoạch).
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('MANAGER','ACCOUNTANT','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','ACCOUNTANT','STAFF')")
     public ResponseEntity<AbnormalStockResponse> create(@Valid @RequestBody AbnormalStockCreateRequest request,
                                                           @AuthenticationPrincipal User actor) {
         return ResponseEntity.status(HttpStatus.CREATED).body(abnormalStockService.create(request, actor));

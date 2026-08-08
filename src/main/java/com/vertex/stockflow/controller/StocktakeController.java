@@ -25,14 +25,14 @@ public class StocktakeController {
 
     // Khung tồn kho hiện tại của kho để FE dựng form đếm trước khi tạo phiếu (quyết định #2).
     @GetMapping("/inventory-snapshot")
-    @PreAuthorize("hasAnyRole('MANAGER','ACCOUNTANT','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','ACCOUNTANT','STAFF')")
     public ResponseEntity<List<StorageMapCellResponse>> getInventorySnapshot(@RequestParam Integer warehouseId) {
         return ResponseEntity.ok(stocktakeService.getInventorySnapshot(warehouseId));
     }
 
     // Lập phiếu kiểm kê - ma trận SRS §3.3: ADMIN không có quyền lập (BR-06).
     @PostMapping
-    @PreAuthorize("hasAnyRole('MANAGER','ACCOUNTANT','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','ACCOUNTANT','STAFF')")
     public ResponseEntity<StocktakeResponse> create(@Valid @RequestBody StocktakeCreateRequest request,
                                                       @AuthenticationPrincipal User actor) {
         return ResponseEntity.status(HttpStatus.CREATED).body(stocktakeService.create(request, actor));
