@@ -32,12 +32,18 @@ public class LotServiceImpl implements LotService {
     public LotResponse create(LotCreateRequest request) {
         ProductEntity product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + request.getProductId()));
-        if (lotRepository.existsByProductIdAndLotCode(request.getProductId(), request.getLotCode())) {
+        
+        String lotCode = request.getLotCode();
+        if (lotCode == null || lotCode.trim().isEmpty()) {
+            lotCode = "LOT-" + product.getCode() + "-" + java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        }
+
+        if (lotRepository.existsByProductIdAndLotCode(request.getProductId(), lotCode)) {
             throw new DuplicateResourceException("Lot code already exists for product id: " + request.getProductId());
         }
         LotEntity lot = LotEntity.builder()
                 .product(product)
-                .lotCode(request.getLotCode())
+                .lotCode(lotCode)
                 .mfgDate(request.getMfgDate())
                 .expDate(request.getExpDate())
                 .status(StatusEnum.ACTIVE)

@@ -18,6 +18,8 @@ import com.vertex.stockflow.service.AuditLogService;
 import com.vertex.stockflow.service.InventoryService;
 import com.vertex.stockflow.service.StocktakeService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -122,21 +124,24 @@ public class StocktakeServiceImpl implements StocktakeService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<StocktakeResponse> getByWarehouseId(Integer warehouseId) {
+    public Page<StocktakeResponse> getByWarehouseId(Integer warehouseId, Pageable pageable, User actor) {
         findWarehouseOrThrow(warehouseId);
-        List<StocktakeEntity> stocktakes = stocktakeRepository.findByWarehouseId(warehouseId);
+        UserEntity currentUser = findUserOrThrow(actor);
+        
+        Page<StocktakeEntity> stocktakePage;
+        if (actor.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_STAFF"))) {
+            stocktakePage = stocktakeRepository.findByWarehouseIdAndCreatedById(warehouseId, currentUser.getId(), pageable);
+        } else {
+            stocktakePage = stocktakeRepository.findByWarehouseId(warehouseId, pageable);
+        }
 
-        // Gom chi tiết của TẤT CẢ phiếu trong 1 query duy nhất rồi group theo id trong bộ nhớ,
-        // thay vì gọi findByStocktakeId riêng cho từng phiếu (N+1) trong vòng lặp bên dưới.
         Map<Integer, List<StocktakeDetailEntity>> detailsByStocktakeId = stocktakeDetailRepository
-                .findByStocktake_IdIn(stocktakes.stream().map(StocktakeEntity::getId).toList())
+                .findByStocktake_IdIn(stocktakePage.getContent().stream().map(StocktakeEntity::getId).toList())
                 .stream()
                 .collect(Collectors.groupingBy(d -> d.getStocktake().getId()));
 
-        return stocktakes.stream()
-                .map(st -> StocktakeMapper.toResponse(st,
-                        detailsByStocktakeId.getOrDefault(st.getId(), List.of())))
-                .toList();
+        return stocktakePage.map(st -> StocktakeMapper.toResponse(st,
+                detailsByStocktakeId.getOrDefault(st.getId(), List.of())));
     }
 
     @Override

@@ -6,14 +6,14 @@ import com.vertex.stockflow.dto.response.AbnormalStockResponse;
 import com.vertex.stockflow.service.AbnormalStockService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/abnormal-stocks")
@@ -26,15 +26,18 @@ public class AbnormalStockController {
     // để tránh viết trùng cùng 1 query ở 2 controller (xem Bước 15 trong kế hoạch).
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','ACCOUNTANT','STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','STAFF')")
     public ResponseEntity<AbnormalStockResponse> create(@Valid @RequestBody AbnormalStockCreateRequest request,
                                                           @AuthenticationPrincipal User actor) {
         return ResponseEntity.status(HttpStatus.CREATED).body(abnormalStockService.create(request, actor));
     }
 
+    // Danh sách phiếu bất thường — STAFF không tra cứu danh sách (ma trận D).
     @GetMapping
-    public ResponseEntity<List<AbnormalStockResponse>> getByWarehouseId(@RequestParam Integer warehouseId) {
-        return ResponseEntity.ok(abnormalStockService.getByWarehouseId(warehouseId));
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','ACCOUNTANT')")
+    public ResponseEntity<Page<AbnormalStockResponse>> getByWarehouseId(@RequestParam Integer warehouseId,
+                                                                        Pageable pageable) {
+        return ResponseEntity.ok(abnormalStockService.getByWarehouseId(warehouseId, pageable));
     }
 
     @GetMapping("/{id}")
@@ -43,13 +46,13 @@ public class AbnormalStockController {
     }
 
     @PatchMapping("/{id}/approve")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','ACCOUNTANT')")
+    @PreAuthorize("hasAnyRole('ADMIN','ACCOUNTANT')")
     public ResponseEntity<AbnormalStockResponse> approve(@PathVariable Integer id, @AuthenticationPrincipal User actor) {
         return ResponseEntity.ok(abnormalStockService.approve(id, actor));
     }
 
     @PatchMapping("/{id}/reject")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','ACCOUNTANT')")
+    @PreAuthorize("hasAnyRole('ADMIN','ACCOUNTANT')")
     public ResponseEntity<AbnormalStockResponse> reject(@PathVariable Integer id,
                                                           @Valid @RequestBody AbnormalStockRejectRequest request,
                                                           @AuthenticationPrincipal User actor) {

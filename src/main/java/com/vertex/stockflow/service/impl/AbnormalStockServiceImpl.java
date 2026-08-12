@@ -18,6 +18,8 @@ import com.vertex.stockflow.service.AbnormalStockService;
 import com.vertex.stockflow.service.AuditLogService;
 import com.vertex.stockflow.service.InventoryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -108,21 +110,17 @@ public class AbnormalStockServiceImpl implements AbnormalStockService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AbnormalStockResponse> getByWarehouseId(Integer warehouseId) {
+    public Page<AbnormalStockResponse> getByWarehouseId(Integer warehouseId, Pageable pageable) {
         findWarehouseOrThrow(warehouseId);
-        List<AbnormalStockEntity> abnormalStocks = abnormalStockRepository.findByWarehouseId(warehouseId);
+        Page<AbnormalStockEntity> abnormalStockPage = abnormalStockRepository.findByWarehouseId(warehouseId, pageable);
 
-        // Gom chi tiết của TẤT CẢ phiếu trong 1 query duy nhất rồi group theo id trong bộ nhớ,
-        // thay vì gọi findByAbnormalStockId riêng cho từng phiếu (N+1) trong vòng lặp bên dưới.
         Map<Integer, List<AbnormalStockDetailEntity>> detailsByAbnormalStockId = abnormalStockDetailRepository
-                .findByAbnormalStock_IdIn(abnormalStocks.stream().map(AbnormalStockEntity::getId).toList())
+                .findByAbnormalStock_IdIn(abnormalStockPage.getContent().stream().map(AbnormalStockEntity::getId).toList())
                 .stream()
                 .collect(Collectors.groupingBy(d -> d.getAbnormalStock().getId()));
 
-        return abnormalStocks.stream()
-                .map(as -> AbnormalStockMapper.toResponse(as,
-                        detailsByAbnormalStockId.getOrDefault(as.getId(), List.of())))
-                .toList();
+        return abnormalStockPage.map(as -> AbnormalStockMapper.toResponse(as,
+                detailsByAbnormalStockId.getOrDefault(as.getId(), List.of())));
     }
 
     @Override

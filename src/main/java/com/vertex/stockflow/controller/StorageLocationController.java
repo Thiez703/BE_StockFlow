@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,17 +21,20 @@ public class StorageLocationController {
     private final StorageLocationService storageLocationService;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public ResponseEntity<StorageLocationResponse> create(@Valid @RequestBody StorageLocationCreateRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(storageLocationService.create(request));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public ResponseEntity<StorageLocationResponse> update(@PathVariable Integer id,
                                                              @Valid @RequestBody StorageLocationUpdateRequest request) {
         return ResponseEntity.ok(storageLocationService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
         storageLocationService.delete(id);
         return ResponseEntity.noContent().build();
@@ -52,11 +56,13 @@ public class StorageLocationController {
     }
 
     @PatchMapping("/{id}/deactivate")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public ResponseEntity<StorageLocationResponse> deactivate(@PathVariable Integer id) {
         return ResponseEntity.ok(storageLocationService.deactivate(id));
     }
 
     @PatchMapping("/{id}/activate")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public ResponseEntity<StorageLocationResponse> activate(@PathVariable Integer id) {
         return ResponseEntity.ok(storageLocationService.activate(id));
     }

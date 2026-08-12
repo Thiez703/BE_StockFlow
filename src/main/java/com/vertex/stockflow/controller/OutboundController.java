@@ -6,13 +6,13 @@ import com.vertex.stockflow.dto.response.OutboundResponse;
 import com.vertex.stockflow.service.OutboundService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/outbounds")
@@ -39,8 +39,9 @@ public class OutboundController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('STAFF','ACCOUNTANT','MANAGER','ADMIN')")
-    public ResponseEntity<List<OutboundResponse>> getByWarehouse(@RequestParam Integer warehouseId) {
-        return ResponseEntity.ok(outboundService.getByWarehouseId(warehouseId));
+    public ResponseEntity<Page<OutboundResponse>> getByWarehouse(@RequestParam Integer warehouseId,
+                                                                  Pageable pageable) {
+        return ResponseEntity.ok(outboundService.getByWarehouseId(warehouseId, pageable));
     }
 
     @GetMapping("/{id}")

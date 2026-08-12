@@ -3,6 +3,8 @@ package com.vertex.stockflow.controller;
 import com.vertex.stockflow.dto.request.LotCreateRequest;
 import com.vertex.stockflow.dto.request.LotUpdateRequest;
 import com.vertex.stockflow.dto.response.LotResponse;
+import com.vertex.stockflow.dto.response.SellThroughRiskResponse;
+import com.vertex.stockflow.service.AlertService;
 import com.vertex.stockflow.service.LotService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,7 @@ import java.util.List;
 public class LotController {
 
     private final LotService lotService;
+    private final AlertService alertService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -47,5 +50,10 @@ public class LotController {
     public ResponseEntity<LotResponse> delete(@PathVariable Integer id){
         lotService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{lotId}/sell-through-risk")
+    public ResponseEntity<SellThroughRiskResponse> getSellThroughRisk(@PathVariable Integer lotId) {
+        return ResponseEntity.ok(alertService.getLotSellThroughRisk(lotId));
     }
 }

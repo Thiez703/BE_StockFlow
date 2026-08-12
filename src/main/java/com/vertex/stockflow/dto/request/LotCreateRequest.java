@@ -16,7 +16,6 @@ public class LotCreateRequest {
     @NotNull
     private Integer productId;
 
-    @NotBlank
     @Size(max = 30)
     private String lotCode;
 

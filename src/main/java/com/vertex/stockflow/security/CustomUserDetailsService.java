@@ -22,6 +22,11 @@ public class CustomUserDetailsService implements UserDetailsService {
         public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
                 UserEntity userEntity = userRepository.findByEmail(username)
                         .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng với email: " + username));
-                return new User(userEntity.getEmail(), userEntity.getPasswordHash(), List.of(new SimpleGrantedAuthority("ROLE_" + userEntity.getRole().name())));
+                return User.builder()
+                        .username(userEntity.getEmail())
+                        .password(userEntity.getPasswordHash())
+                        .disabled(!Boolean.TRUE.equals(userEntity.getIsActive()))
+                        .authorities(new SimpleGrantedAuthority("ROLE_" + userEntity.getRole().name()))
+                        .build();
         }
 }

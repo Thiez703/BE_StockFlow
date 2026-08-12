@@ -1,5 +1,6 @@
 package com.vertex.stockflow.controller;
 
+import com.vertex.stockflow.dto.request.ChangePasswordRequest;
 import com.vertex.stockflow.dto.request.LoginRequest;
 import com.vertex.stockflow.dto.request.RefreshTokenRequest;
 import com.vertex.stockflow.dto.response.LoginResponse;
@@ -11,6 +12,7 @@ import com.vertex.stockflow.service.AuthService;
 import com.vertex.stockflow.service.RefreshTokenService;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
@@ -58,5 +60,13 @@ public class AuthController {
         String email = authentication.getName();
         UserResponse userResponse = authService.getCurrentUser(email);
         return ResponseEntity.ok(userResponse);
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<String> changePassword(@Valid @RequestBody ChangePasswordRequest request,
+                                                  Authentication authentication) {
+        User actor = (User) authentication.getPrincipal();
+        authService.changePassword(request, actor);
+        return ResponseEntity.ok("Đổi mật khẩu thành công");
     }
 }

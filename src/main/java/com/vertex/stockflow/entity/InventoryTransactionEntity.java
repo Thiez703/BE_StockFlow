@@ -7,7 +7,10 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "inventory_transactions")
+@Table(name = "inventory_transactions", indexes = {
+        @Index(name = "idx_inv_txn_ref", columnList = "ref_type, ref_id"),
+        @Index(name = "idx_inv_txn_created_at", columnList = "created_at")
+})
 @Getter
 @Setter
 @NoArgsConstructor

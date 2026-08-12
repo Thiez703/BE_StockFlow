@@ -35,3 +35,8 @@ build/
 ### Postman ###
 .postman/
 postman/
+
+### Environment ###
+.env
+.env.*
+!.env.example

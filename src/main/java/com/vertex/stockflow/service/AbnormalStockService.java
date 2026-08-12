@@ -3,15 +3,15 @@ package com.vertex.stockflow.service;
 import com.vertex.stockflow.dto.request.AbnormalStockCreateRequest;
 import com.vertex.stockflow.dto.request.AbnormalStockRejectRequest;
 import com.vertex.stockflow.dto.response.AbnormalStockResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.User;
-
-import java.util.List;
 
 public interface AbnormalStockService {
 
     AbnormalStockResponse create(AbnormalStockCreateRequest request, User actor);
 
-    List<AbnormalStockResponse> getByWarehouseId(Integer warehouseId);
+    Page<AbnormalStockResponse> getByWarehouseId(Integer warehouseId, Pageable pageable);
 
     AbnormalStockResponse getById(Integer id);
 

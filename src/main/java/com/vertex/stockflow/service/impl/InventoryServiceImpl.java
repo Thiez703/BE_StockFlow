@@ -1,12 +1,16 @@
 package com.vertex.stockflow.service.impl;
 
 import com.vertex.stockflow.common.enums.RefTypeEnum;
+import com.vertex.stockflow.common.specification.InventorySpecification;
+import com.vertex.stockflow.dto.response.InventoryResponse;
 import com.vertex.stockflow.entity.*;
 import com.vertex.stockflow.exception.IllegalOperationException;
 import com.vertex.stockflow.exception.ResourceNotFoundException;
 import com.vertex.stockflow.repository.*;
 import com.vertex.stockflow.service.InventoryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,4 +75,29 @@ public class InventoryServiceImpl implements InventoryService {
 
             inventoryTransactionRepository.save(transaction);
         }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<InventoryResponse> search(Integer productId, Integer lotId, Integer locationId, Pageable pageable) {
+        return inventoryRepository
+                .findAll(InventorySpecification.filter(productId, lotId, locationId), pageable)
+                .map(this::toResponse);
     }
+
+    private InventoryResponse toResponse(InventoryEntity entity) {
+        return InventoryResponse.builder()
+                .id(entity.getId())
+                .warehouseId(entity.getWarehouse().getId())
+                .warehouseCode(entity.getWarehouse().getCode())
+                .productId(entity.getProduct().getId())
+                .productCode(entity.getProduct().getCode())
+                .productName(entity.getProduct().getName())
+                .lotId(entity.getLot().getId())
+                .lotCode(entity.getLot().getLotCode())
+                .locationId(entity.getLocation().getId())
+                .locationCode(entity.getLocation().getLocationCode())
+                .quantity(entity.getQuantity())
+                .updatedAt(entity.getUpdatedAt())
+                .build();
+    }
+}

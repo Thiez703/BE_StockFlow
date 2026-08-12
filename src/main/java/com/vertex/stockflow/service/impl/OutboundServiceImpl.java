@@ -1,5 +1,6 @@
 package com.vertex.stockflow.service.impl;
 
+import com.vertex.stockflow.common.enums.AuditAction;
 import com.vertex.stockflow.common.enums.DocumentStatusEnum;
 import com.vertex.stockflow.common.enums.IssueTypeEnum;
 import com.vertex.stockflow.common.enums.RefTypeEnum;
@@ -12,9 +13,12 @@ import com.vertex.stockflow.exception.IllegalOperationException;
 import com.vertex.stockflow.exception.ResourceNotFoundException;
 import com.vertex.stockflow.mapper.OutboundMapper;
 import com.vertex.stockflow.repository.*;
+import com.vertex.stockflow.service.AuditLogService;
 import com.vertex.stockflow.service.InventoryService;
 import com.vertex.stockflow.service.OutboundService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -39,6 +43,7 @@ public class OutboundServiceImpl implements OutboundService {
     private final StorageLocationRepository storageLocationRepository;
     private final UserRepository userRepository;
     private final InventoryService inventoryService;
+    private final AuditLogService auditLogService;
 
     @Override
     @Transactional
@@ -118,6 +123,9 @@ public class OutboundServiceImpl implements OutboundService {
 
         details = outboundDetailRepository.saveAll(details);
 
+        auditLogService.log(actor, AuditAction.OUTBOUND_CREATE, "outbounds", outbound.getId(),
+                "Tạo phiếu xuất " + outbound.getCode());
+
         return OutboundMapper.toResponse(outbound, details);
     }
 
@@ -151,7 +159,7 @@ public class OutboundServiceImpl implements OutboundService {
                     detail.getLot().getId(),
                     detail.getLocation().getId(),
                     detail.getQuantity(),
-                    RefTypeEnum.OUTBOUND,
+                    RefTypeEnum.OUTBOUND_VOID,
                     outbound.getId(),
                     voidedBy.getId());
         }
@@ -161,21 +169,22 @@ public class OutboundServiceImpl implements OutboundService {
         outbound.setVoidedBy(voidedBy);
         outbound.setVoidedAt(LocalDateTime.now());
         outboundRepository.save(outbound);
+
+        auditLogService.log(actor, AuditAction.OUTBOUND_VOID, "outbounds", outbound.getId(),
+                "Hủy phiếu xuất " + outbound.getCode() + ": " + reason);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<OutboundResponse> getByWarehouseId(Integer warehouseId) {
-        List<OutboundEntity> outbounds = outboundRepository.findByWarehouseId(warehouseId);
+    public Page<OutboundResponse> getByWarehouseId(Integer warehouseId, Pageable pageable) {
+        Page<OutboundEntity> outboundPage = outboundRepository.findByWarehouseId(warehouseId, pageable);
 
         Map<Integer, List<OutboundDetailEntity>> detailsByOutboundId = outboundDetailRepository
-                .findByOutbound_IdIn(outbounds.stream().map(OutboundEntity::getId).toList())
+                .findByOutbound_IdIn(outboundPage.getContent().stream().map(OutboundEntity::getId).toList())
                 .stream()
                 .collect(Collectors.groupingBy(d -> d.getOutbound().getId()));
 
-        return outbounds.stream()
-                .map(o -> OutboundMapper.toResponse(o, detailsByOutboundId.getOrDefault(o.getId(), List.of())))
-                .toList();
+        return outboundPage.map(o -> OutboundMapper.toResponse(o, detailsByOutboundId.getOrDefault(o.getId(), List.of())));
     }
 
     @Override
