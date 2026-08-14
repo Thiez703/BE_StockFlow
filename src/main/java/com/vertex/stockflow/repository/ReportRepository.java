@@ -35,15 +35,10 @@ public interface ReportRepository extends JpaRepository<InventoryTransactionEnti
             FROM lots l
             JOIN products p ON p.id = l.product_id
             LEFT JOIN (
-                SELECT id2.lot_id, id2.unit_price
+                SELECT id2.lot_id, MAX(id2.unit_price) AS unit_price
                 FROM inbound_details id2
-                WHERE id2.id = (
-                    SELECT id3.id FROM inbound_details id3
-                    JOIN inbounds ib3 ON ib3.id = id3.inbound_id AND ib3.status = 'POSTED'
-                    WHERE id3.lot_id = id2.lot_id
-                    ORDER BY ib3.created_at DESC
-                    LIMIT 1
-                )
+                JOIN inbounds ib2 ON ib2.id = id2.inbound_id AND ib2.status = 'POSTED'
+                GROUP BY id2.lot_id
             ) lp ON lp.lot_id = l.id
             LEFT JOIN (
                 SELECT sub.product_id, sub.lot_id,

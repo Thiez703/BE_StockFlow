@@ -2,7 +2,6 @@ package com.vertex.stockflow.controller;
 
 import com.vertex.stockflow.dto.response.InventorySummaryResponse;
 import com.vertex.stockflow.dto.response.StocktakeVarianceResponse;
-import com.vertex.stockflow.service.ExcelExportService;
 import com.vertex.stockflow.service.ReportService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +14,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
 @RestController
@@ -25,38 +26,35 @@ import java.time.format.DateTimeFormatter;
 public class ReportController {
 
     private final ReportService reportService;
-    private final ExcelExportService excelExportService;
 
     @GetMapping("/inventory-summary")
     public ResponseEntity<Page<InventorySummaryResponse>> getInventorySummary(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+            @RequestParam String from,
+            @RequestParam String to,
             @RequestParam(required = false) Integer productId,
             Pageable pageable) {
-        return ResponseEntity.ok(reportService.getInventorySummary(from, to, productId, pageable));
-    }
-
-    @GetMapping("/inventory-summary/export")
-    public void exportInventorySummary(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
-            @RequestParam(required = false) Integer productId,
-            HttpServletResponse response) throws IOException {
-
-        String filename = "BaoCao_NhapXuatTon_" + from.format(DateTimeFormatter.BASIC_ISO_DATE)
-                + "_" + to.format(DateTimeFormatter.BASIC_ISO_DATE) + ".xlsx";
-
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"");
-
-        excelExportService.exportInventoryReport(from, to, productId, response.getOutputStream());
+        LocalDateTime fromDt = parseDate(from).atStartOfDay();
+        LocalDateTime toDt = parseDate(to).atTime(LocalTime.MAX);
+        return ResponseEntity.ok(reportService.getInventorySummary(fromDt, toDt, productId, pageable));
     }
 
     @GetMapping("/stocktake-variance")
     public ResponseEntity<Page<StocktakeVarianceResponse>> getStocktakeVariance(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+            @RequestParam String from,
+            @RequestParam String to,
             Pageable pageable) {
-        return ResponseEntity.ok(reportService.getStocktakeVariance(from, to, pageable));
+        LocalDateTime fromDt = parseDate(from).atStartOfDay();
+        LocalDateTime toDt = parseDate(to).atTime(LocalTime.MAX);
+        return ResponseEntity.ok(reportService.getStocktakeVariance(fromDt, toDt, pageable));
+    }
+
+    private LocalDate parseDate(String dateStr) {
+        if (dateStr == null || dateStr.isBlank()) return LocalDate.now();
+        if (dateStr.contains("T")) {
+            return java.time.ZonedDateTime.parse(dateStr)
+                    .withZoneSameInstant(java.time.ZoneId.systemDefault())
+                    .toLocalDate();
+        }
+        return LocalDate.parse(dateStr);
     }
 }

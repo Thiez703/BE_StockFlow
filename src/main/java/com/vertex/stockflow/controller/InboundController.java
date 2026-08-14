@@ -16,7 +16,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @RestController
 @RequestMapping("/api/inbounds")
@@ -47,10 +49,12 @@ public class InboundController {
             @RequestParam(required = false) Integer warehouseId,
             @RequestParam(required = false) Integer supplierId,
             @RequestParam(required = false) DocumentStatusEnum status,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             Pageable pageable) {
-        return ResponseEntity.ok(inboundService.search(warehouseId, supplierId, status, from, to, pageable));
+        LocalDateTime fromDt = from != null ? from.atStartOfDay() : null;
+        LocalDateTime toDt = to != null ? to.atTime(LocalTime.MAX) : null;
+        return ResponseEntity.ok(inboundService.search(warehouseId, supplierId, status, fromDt, toDt, pageable));
     }
 
     @GetMapping("/{id}")

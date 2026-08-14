@@ -35,7 +35,7 @@ public class LotServiceImpl implements LotService {
         
         String lotCode = request.getLotCode();
         if (lotCode == null || lotCode.trim().isEmpty()) {
-            lotCode = "LOT-" + product.getCode() + "-" + java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+            lotCode = "LOT-" + product.getCode() + "-" + java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
         }
 
         if (lotRepository.existsByProductIdAndLotCode(request.getProductId(), lotCode)) {

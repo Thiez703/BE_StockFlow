@@ -207,9 +207,7 @@ public class InboundServiceImpl implements InboundService {
 
         String lotCode = input.getLotCode();
         if (lotCode == null || lotCode.trim().isEmpty()) {
-            // Delay 1ms nếu cần để tránh trùng lặp nếu tạo nhiều lô cùng lúc cho cùng 1 sản phẩm
-            try { Thread.sleep(1); } catch (InterruptedException ignored) {}
-            lotCode = "LOT-" + product.getCode() + "-" + java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS"));
+            lotCode = "LOT-" + product.getCode() + "-" + java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
         }
         final String finalLotCode = lotCode;
 

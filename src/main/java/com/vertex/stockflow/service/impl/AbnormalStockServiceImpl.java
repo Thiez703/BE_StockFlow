@@ -88,22 +88,47 @@ public class AbnormalStockServiceImpl implements AbnormalStockService {
                     .build());
         }
 
+        boolean isAutoApprove = actor.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_ACCOUNTANT"));
+
         AbnormalStockEntity abnormalStock = AbnormalStockEntity.builder()
                 .code("TEMP")
                 .warehouse(warehouse)
                 .createdBy(createdBy)
-                .status(ApprovalStatusEnum.PENDING)
+                .status(isAutoApprove ? ApprovalStatusEnum.APPROVED : ApprovalStatusEnum.PENDING)
                 .build();
+
+        if (isAutoApprove) {
+            abnormalStock.setApprovedBy(createdBy);
+            abnormalStock.setApprovedAt(LocalDateTime.now());
+        }
+
         abnormalStock = abnormalStockRepository.save(abnormalStock);
 
-        // Không cần gọi save() lần 2 - entity đang managed trong transaction này, Hibernate tự
-        // flush UPDATE lúc commit nhờ dirty checking (cùng lý do đã áp dụng ở StocktakeServiceImpl).
+        // Không cần gọi save() lần 2 - entity đang managed
         abnormalStock.setCode("BT-" + String.format("%06d", abnormalStock.getId()));
 
         for (AbnormalStockDetailEntity detail : details) {
             detail.setAbnormalStock(abnormalStock);
+            
+            if (isAutoApprove) {
+                inventoryService.updateInventory(
+                        warehouse.getId(),
+                        detail.getProduct().getId(),
+                        detail.getLot().getId(),
+                        detail.getLocation().getId(),
+                        -detail.getQuantity(),
+                        RefTypeEnum.ABNORMAL,
+                        abnormalStock.getId(),
+                        createdBy.getId());
+            }
         }
         details = abnormalStockDetailRepository.saveAll(details);
+
+        if (isAutoApprove) {
+            auditLogService.log(actor, AuditAction.ABNORMAL_STOCK_APPROVE, "abnormal_stocks", abnormalStock.getId(),
+                    "Tự động duyệt phiếu hàng bất thường " + abnormalStock.getCode() + " do người lập là Admin/Kế toán");
+        }
 
         return AbnormalStockMapper.toResponse(abnormalStock, details);
     }

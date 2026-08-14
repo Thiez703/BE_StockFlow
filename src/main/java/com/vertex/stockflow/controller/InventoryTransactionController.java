@@ -11,7 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @RestController
 @RequestMapping("/api/inventory-transactions")
@@ -26,11 +28,13 @@ public class InventoryTransactionController {
             @RequestParam(required = false) Integer productId,
             @RequestParam(required = false) Integer lotId,
             @RequestParam(required = false) Integer locationId,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(required = false) RefTypeEnum refType,
             Pageable pageable) {
-        return ResponseEntity.ok(inventoryTransactionService.search(productId, lotId, locationId, from, to, refType, pageable));
+        LocalDateTime fromDt = from != null ? from.atStartOfDay() : null;
+        LocalDateTime toDt = to != null ? to.atTime(LocalTime.MAX) : null;
+        return ResponseEntity.ok(inventoryTransactionService.search(productId, lotId, locationId, fromDt, toDt, refType, pageable));
     }
 
     @GetMapping("/by-product/{productId}")

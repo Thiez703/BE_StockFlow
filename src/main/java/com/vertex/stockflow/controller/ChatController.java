@@ -42,4 +42,13 @@ public class ChatController {
             @AuthenticationPrincipal User actor) {
         return ResponseEntity.ok(chatService.getConversationMessages(id, actor));
     }
+
+    // 4. API xoá đoạn chat
+    @DeleteMapping("/conversations/{id}")
+    public ResponseEntity<Void> deleteConversation(
+            @PathVariable Integer id,
+            @AuthenticationPrincipal User actor) {
+        chatService.deleteConversation(id, actor);
+        return ResponseEntity.noContent().build();
+    }
 }

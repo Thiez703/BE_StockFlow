@@ -25,6 +25,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final UserDetailsService userDetailsService;
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        // Bỏ qua kiểm tra token đối với các API đăng nhập và làm mới token
+        return path.startsWith("/api/auth/login") 
+            || path.startsWith("/api/auth/refresh")
+            || path.startsWith("/api/auth/logout");
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 

@@ -62,7 +62,11 @@ public class InventoryServiceImpl implements InventoryService {
             }
 
             inventory.setQuantity(newQuantity);
-            inventoryRepository.save(inventory);
+            if (newQuantity == 0) {
+                inventory.setLocation(null);
+            }
+            
+            inventory = inventoryRepository.saveAndFlush(inventory);
 
             InventoryTransactionEntity transaction = InventoryTransactionEntity.builder()
                     .inventory(inventory)
@@ -94,8 +98,8 @@ public class InventoryServiceImpl implements InventoryService {
                 .productName(entity.getProduct().getName())
                 .lotId(entity.getLot().getId())
                 .lotCode(entity.getLot().getLotCode())
-                .locationId(entity.getLocation().getId())
-                .locationCode(entity.getLocation().getLocationCode())
+                .locationId(entity.getLocation() != null ? entity.getLocation().getId() : null)
+                .locationCode(entity.getLocation() != null ? entity.getLocation().getLocationCode() : null)
                 .quantity(entity.getQuantity())
                 .updatedAt(entity.getUpdatedAt())
                 .build();

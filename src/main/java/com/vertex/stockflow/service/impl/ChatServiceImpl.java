@@ -110,4 +110,19 @@ public class ChatServiceImpl implements ChatService {
                         .role(msg.getRole()).content(msg.getContent()).createdAt(msg.getCreatedAt()).build())
                 .collect(Collectors.toList());
     }
+
+    @Override
+    @Transactional
+    public void deleteConversation(Integer conversationId, User actor) {
+        UserEntity currentUser = userRepository.findByEmail(actor.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        ConversationEntity conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new RuntimeException("Conversation not found"));
+        if (!conversation.getUser().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("Access Denied");
+        }
+        
+        messageRepository.deleteAllByConversationId(conversationId);
+        conversationRepository.delete(conversation);
+    }
 }

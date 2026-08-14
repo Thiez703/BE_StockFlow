@@ -25,6 +25,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -70,7 +71,7 @@ public class AlertServiceImpl implements AlertService {
                 continue;
             }
 
-            if (currentStock < threshold) {
+            if (currentStock <= threshold) {
                 BigDecimal daysRemaining = velocity.compareTo(BigDecimal.ZERO) > 0
                         ? BigDecimal.valueOf(currentStock).divide(velocity, 1, RoundingMode.HALF_UP)
                         : null;
@@ -133,29 +134,41 @@ public class AlertServiceImpl implements AlertService {
 
         Map<Integer, Long> lotStockMap = buildLotStockMap();
 
+        Map<Integer, List<LotEntity>> lotsByProduct = lots.stream()
+                .filter(l -> lotStockMap.getOrDefault(l.getId(), 0L) > 0)
+                .sorted(Comparator.comparing(LotEntity::getExpDate).thenComparing(LotEntity::getId))
+                .collect(Collectors.groupingBy(l -> l.getProduct().getId()));
+
         List<SellThroughRiskResponse> risks = new ArrayList<>();
 
-        for (LotEntity lot : lots) {
-            long lotStock = lotStockMap.getOrDefault(lot.getId(), 0L);
-            if (lotStock <= 0) continue;
+        for (Map.Entry<Integer, List<LotEntity>> entry : lotsByProduct.entrySet()) {
+            Integer productId = entry.getKey();
+            List<LotEntity> productLots = entry.getValue();
+            BigDecimal velocity = velocityMap.getOrDefault(productId, BigDecimal.ZERO);
+            
+            long cumulativeStock = 0;
 
-            BigDecimal velocity = velocityMap.getOrDefault(lot.getProduct().getId(), BigDecimal.ZERO);
-            int daysUntilExpiry = (int) ChronoUnit.DAYS.between(today, lot.getExpDate());
+            for (LotEntity lot : productLots) {
+                long lotStock = lotStockMap.getOrDefault(lot.getId(), 0L);
+                cumulativeStock += lotStock;
 
-            BigDecimal daysToSellOut;
-            boolean atRisk;
+                int daysUntilExpiry = (int) ChronoUnit.DAYS.between(today, lot.getExpDate());
 
-            if (velocity.compareTo(BigDecimal.ZERO) > 0) {
-                daysToSellOut = BigDecimal.valueOf(lotStock).divide(velocity, 1, RoundingMode.HALF_UP);
-                atRisk = daysToSellOut.compareTo(BigDecimal.valueOf(daysUntilExpiry)) > 0;
-            } else {
-                daysToSellOut = null;
-                atRisk = true;
-            }
+                BigDecimal daysToSellOut;
+                boolean atRisk;
 
-            if (atRisk) {
-                risks.add(buildSellThroughRiskResponse(lot, (int) lotStock, velocity,
-                        daysToSellOut, daysUntilExpiry));
+                if (velocity.compareTo(BigDecimal.ZERO) > 0) {
+                    daysToSellOut = BigDecimal.valueOf(cumulativeStock).divide(velocity, 1, RoundingMode.HALF_UP);
+                    atRisk = daysToSellOut.compareTo(BigDecimal.valueOf(daysUntilExpiry)) >= 0;
+                } else {
+                    daysToSellOut = null;
+                    atRisk = true;
+                }
+
+                if (atRisk) {
+                    risks.add(buildSellThroughRiskResponse(lot, (int) lotStock, velocity,
+                            daysToSellOut, daysUntilExpiry));
+                }
             }
         }
 
@@ -164,33 +177,56 @@ public class AlertServiceImpl implements AlertService {
 
     @Override
     public SellThroughRiskResponse getLotSellThroughRisk(Integer lotId) {
-        LotEntity lot = lotRepository.findById(lotId)
+        LotEntity targetLot = lotRepository.findById(lotId)
                 .orElseThrow(() -> new RuntimeException("Lot not found: " + lotId));
 
         Map<Integer, BigDecimal> velocityMap = buildVelocityMap();
-        BigDecimal velocity = velocityMap.getOrDefault(lot.getProduct().getId(), BigDecimal.ZERO);
+        BigDecimal velocity = velocityMap.getOrDefault(targetLot.getProduct().getId(), BigDecimal.ZERO);
 
         List<Object[]> lotStockRows = inventoryRepository.sumStockByLotId(lotId);
-        long lotStock = lotStockRows.isEmpty() ? 0 : ((Number) lotStockRows.get(0)[1]).longValue();
+        long targetLotStock = lotStockRows.isEmpty() ? 0 : ((Number) lotStockRows.get(0)[1]).longValue();
 
         LocalDate today = LocalDate.now();
-        int daysUntilExpiry = lot.getExpDate() != null
-                ? (int) ChronoUnit.DAYS.between(today, lot.getExpDate()) : 0;
+        int daysUntilExpiry = targetLot.getExpDate() != null
+                ? (int) ChronoUnit.DAYS.between(today, targetLot.getExpDate()) : 0;
+
+        long cumulativeStock = 0;
+        if (targetLotStock > 0 && targetLot.getExpDate() != null) {
+            List<LotEntity> earlierLots = lotRepository.findAll().stream()
+                    .filter(l -> l.getStatus() == StatusEnum.ACTIVE 
+                              && l.getProduct().getId().equals(targetLot.getProduct().getId())
+                              && l.getExpDate() != null)
+                    .sorted(Comparator.comparing(LotEntity::getExpDate).thenComparing(LotEntity::getId))
+                    .toList();
+            
+            Map<Integer, Long> allLotStockMap = buildLotStockMap();
+            for (LotEntity l : earlierLots) {
+                long stock = allLotStockMap.getOrDefault(l.getId(), 0L);
+                if (stock > 0) {
+                    cumulativeStock += stock;
+                }
+                if (l.getId().equals(lotId)) {
+                    break;
+                }
+            }
+        } else {
+            cumulativeStock = targetLotStock;
+        }
 
         BigDecimal daysToSellOut = null;
         boolean atRisk;
 
-        if (lotStock <= 0) {
+        if (targetLotStock <= 0) {
             atRisk = false;
         } else if (velocity.compareTo(BigDecimal.ZERO) > 0) {
-            daysToSellOut = BigDecimal.valueOf(lotStock).divide(velocity, 1, RoundingMode.HALF_UP);
-            atRisk = lot.getExpDate() != null
-                    && daysToSellOut.compareTo(BigDecimal.valueOf(daysUntilExpiry)) > 0;
+            daysToSellOut = BigDecimal.valueOf(cumulativeStock).divide(velocity, 1, RoundingMode.HALF_UP);
+            atRisk = targetLot.getExpDate() != null
+                    && daysToSellOut.compareTo(BigDecimal.valueOf(daysUntilExpiry)) >= 0;
         } else {
-            atRisk = lot.getExpDate() != null && daysUntilExpiry >= 0 && lotStock > 0;
+            atRisk = targetLot.getExpDate() != null && daysUntilExpiry >= 0 && targetLotStock > 0;
         }
 
-        return buildSellThroughRiskResponse(lot, (int) lotStock, velocity, daysToSellOut, daysUntilExpiry);
+        return buildSellThroughRiskResponse(targetLot, (int) targetLotStock, velocity, daysToSellOut, daysUntilExpiry);
     }
 
     // ─── helpers ────────────────────────────────────────────────────────

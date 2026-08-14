@@ -11,4 +11,6 @@ public interface MessageRepository extends JpaRepository<MessageEntity, Integer>
 
     // Lấy toàn bộ lịch sử tin nhắn của 1 cuộc hội thoại, sắp xếp theo thời gian cũ -> mới (để render từ trên xuống dưới)
     List<MessageEntity> findAllByConversationIdOrderByCreatedAtAsc(Integer conversationId);
+
+    void deleteAllByConversationId(Integer conversationId);
 }

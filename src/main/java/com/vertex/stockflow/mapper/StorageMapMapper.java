@@ -25,7 +25,7 @@ public final class StorageMapMapper {
 
         // quantity == null nghĩa là LEFT JOIN không tìm được dòng inventory nào
         // -> vị trí này đang rảnh. Thoát sớm, khỏi tính tiếp.
-        if (cell.getQuantity() == null) {
+        if (cell.getQuantity() == null || cell.getQuantity() <= 0) {
             cell.setStatus(LocationStatusEnum.EMPTY);
             return;
         }

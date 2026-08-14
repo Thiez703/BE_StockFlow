@@ -99,25 +99,47 @@ public class StocktakeServiceImpl implements StocktakeService {
                     .build());
         }
 
+        boolean isAdmin = actor.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
         StocktakeEntity stocktake = StocktakeEntity.builder()
                 .code("TEMP")
                 .warehouse(warehouse)
                 .createdBy(createdBy)
-                .status(ApprovalStatusEnum.PENDING)
+                .status(isAdmin ? ApprovalStatusEnum.APPROVED : ApprovalStatusEnum.PENDING)
                 .note(request.getNote())
                 .build();
+
+        if (isAdmin) {
+            stocktake.setApprovedBy(createdBy);
+            stocktake.setApprovedAt(LocalDateTime.now());
+        }
+
         stocktake = stocktakeRepository.save(stocktake);
 
-        // Sinh mã sau khi có id (giống cách StorageLocationServiceImpl sinh locationCode từ tọa độ) -
-        // đơn giản, không cần bảng sequence riêng. Không cần gọi save() lần 2: entity đang managed
-        // trong transaction này, Hibernate tự phát hiện thay đổi (dirty checking) và flush UPDATE
-        // lúc commit - gọi save() lần nữa chỉ khiến code trông như phải làm thủ công.
+        // Sinh mã sau khi có id
         stocktake.setCode("KK-" + String.format("%06d", stocktake.getId()));
 
         for (StocktakeDetailEntity detail : details) {
             detail.setStocktake(stocktake);
+            
+            if (isAdmin && detail.getDiffQty() != 0) {
+                inventoryService.updateInventory(
+                        warehouse.getId(),
+                        detail.getProduct().getId(),
+                        detail.getLot().getId(),
+                        detail.getLocation().getId(),
+                        detail.getDiffQty(),
+                        RefTypeEnum.STOCKTAKE,
+                        stocktake.getId(),
+                        createdBy.getId());
+            }
         }
         details = stocktakeDetailRepository.saveAll(details);
+
+        if (isAdmin) {
+            auditLogService.log(actor, AuditAction.STOCKTAKE_APPROVE, "stocktakes", stocktake.getId(),
+                    "Tự động duyệt phiếu kiểm kê " + stocktake.getCode() + " do người lập là ADMIN");
+        }
 
         return StocktakeMapper.toResponse(stocktake, details);
     }

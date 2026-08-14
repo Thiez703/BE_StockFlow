@@ -27,9 +27,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         UserEntity userEntity = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
 
-        refreshTokenRepository.deleteByUser(userEntity);
-        refreshTokenRepository.flush();
-        
+
         return refreshTokenRepository.save(
                 RefreshTokenEntity.builder()
                         .user(userEntity)

@@ -16,4 +16,7 @@ public interface ChatService {
     
     // Lấy lịch sử 1 đoạn chat cụ thể
     List<MessageResponse> getConversationMessages(Integer conversationId, User actor);
+    
+    // Xoá đoạn chat
+    void deleteConversation(Integer conversationId, User actor);
 }

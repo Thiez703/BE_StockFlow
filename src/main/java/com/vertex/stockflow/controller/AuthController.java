@@ -34,7 +34,7 @@ public class AuthController {
         LoginResponse response = authService.login(loginRequest);
 
         RefreshTokenEntity refreshToken = refreshTokenService.createRefreshToken(loginRequest.getEmail());
-        response.setRefreshtoken(refreshToken.getToken());
+        response.setRefreshToken(refreshToken.getToken());
 
         return ResponseEntity.ok(response);
     }

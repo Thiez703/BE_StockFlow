@@ -6,7 +6,7 @@ import lombok.*;
 import java.time.Instant;
 
 @Entity
-@Table(name = "refresh_tokens")
+@Table(name = "refresh_tokens_v2")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,7 +20,7 @@ public class RefreshTokenEntity {
     @Column(nullable = false, unique = true)
     private String token;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "user_id")
     private UserEntity user;
 

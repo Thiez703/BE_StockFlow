@@ -47,7 +47,7 @@ public class InventoryEntity {
     private LotEntity lot;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "location_id", nullable = false)
+    @JoinColumn(name = "location_id", nullable = true)
     private StorageLocationEntity location;
 
     @Column(nullable = false)
