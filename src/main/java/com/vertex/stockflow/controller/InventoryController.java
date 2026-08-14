@@ -25,4 +25,11 @@ public class InventoryController {
             Pageable pageable) {
         return ResponseEntity.ok(inventoryService.search(productId, lotId, locationId, pageable));
     }
+
+    @GetMapping("/by-product")
+    public ResponseEntity<Page<com.vertex.stockflow.dto.response.InventoryByProductResponse>> searchByProduct(
+            @RequestParam(required = false) Integer productId,
+            Pageable pageable) {
+        return ResponseEntity.ok(inventoryService.searchByProduct(productId, pageable));
+    }
 }

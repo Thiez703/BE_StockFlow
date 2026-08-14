@@ -32,19 +32,19 @@ public class InventoryServiceImpl implements InventoryService {
                                 Integer quantityDelta, RefTypeEnum refType, Integer refId, Integer createdByUserId) {
 
             UserEntity createdBy = userRepository.findById(createdByUserId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin tài khoản thao tác (ID: " + createdByUserId + "). Vui lòng thử đăng nhập lại."));
 
             WarehouseEntity warehouse = warehouseRepository.findById(warehouseId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kho"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kho hàng (ID: " + warehouseId + "). Kho này có thể đã bị xóa hoặc ẩn."));
 
             ProductEntity product = productRepository.findById(productId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm (ID: " + productId + "). Sản phẩm này có thể không tồn tại trong hệ thống."));
 
             LotEntity lot = lotRepository.findById(lotId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lô hàng"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lô hàng (ID: " + lotId + "). Vui lòng kiểm tra lại thông tin lô."));
 
             StorageLocationEntity location = storageLocationRepository.findById(locationId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vị trí lưu trữ"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vị trí lưu trữ (ID: " + locationId + "). Vui lòng chọn một vị trí hợp lệ."));
 
             InventoryEntity inventory = inventoryRepository
                     .findByWarehouseIdAndProductIdAndLotIdAndLocationId(warehouseId, productId, lotId, locationId)
@@ -58,7 +58,7 @@ public class InventoryServiceImpl implements InventoryService {
 
             int newQuantity = inventory.getQuantity() + quantityDelta;
             if (newQuantity < 0) {
-                throw new IllegalOperationException("Số lượng tồn kho không đủ");
+                throw new IllegalOperationException("Số lượng tồn kho không đủ để thực hiện xuất kho. Hiện tại chỉ còn " + inventory.getQuantity() + " sản phẩm trong hệ thống.");
             }
 
             inventory.setQuantity(newQuantity);
@@ -86,6 +86,12 @@ public class InventoryServiceImpl implements InventoryService {
         return inventoryRepository
                 .findAll(InventorySpecification.filter(productId, lotId, locationId), pageable)
                 .map(this::toResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<com.vertex.stockflow.dto.response.InventoryByProductResponse> searchByProduct(Integer productId, Pageable pageable) {
+        return inventoryRepository.findInventoryByProduct(productId, pageable);
     }
 
     private InventoryResponse toResponse(InventoryEntity entity) {

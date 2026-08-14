@@ -47,5 +47,12 @@ public interface InventoryRepository extends JpaRepository<InventoryEntity, Inte
             GROUP BY i.lot_id
             """, nativeQuery = true)
     List<Object[]> sumStockByLot();
+
+    @Query("SELECT new com.vertex.stockflow.dto.response.InventoryByProductResponse(" +
+           "i.product.id, i.product.code, i.product.name, SUM(i.quantity)) " +
+           "FROM InventoryEntity i " +
+           "WHERE (:productId IS NULL OR i.product.id = :productId) " +
+           "GROUP BY i.product.id, i.product.code, i.product.name")
+    org.springframework.data.domain.Page<com.vertex.stockflow.dto.response.InventoryByProductResponse> findInventoryByProduct(@Param("productId") Integer productId, org.springframework.data.domain.Pageable pageable);
 }
     

@@ -10,4 +10,6 @@ public interface InventoryService {
                          Integer quantityDelta, RefTypeEnum refType, Integer refId, Integer createdByUserId);
 
     Page<InventoryResponse> search(Integer productId, Integer lotId, Integer locationId, Pageable pageable);
+
+    Page<com.vertex.stockflow.dto.response.InventoryByProductResponse> searchByProduct(Integer productId, Pageable pageable);
 }

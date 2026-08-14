@@ -279,7 +279,7 @@ public class AlertServiceImpl implements AlertService {
         if (lotStock <= 0) {
             atRisk = false;
         } else if (velocity.compareTo(BigDecimal.ZERO) > 0 && daysToSellOut != null) {
-            atRisk = daysToSellOut.compareTo(BigDecimal.valueOf(daysUntilExpiry)) > 0;
+            atRisk = daysToSellOut.compareTo(BigDecimal.valueOf(daysUntilExpiry)) >= 0;
         } else {
             atRisk = daysUntilExpiry >= 0 && lotStock > 0;
         }

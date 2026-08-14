@@ -56,17 +56,17 @@ public class AbnormalStockServiceImpl implements AbnormalStockService {
         for (AbnormalStockDetailInput input : request.getDetails()) {
             if (input.getReasonType() == AbnormalReasonEnum.OTHER
                     && (input.getNote() == null || input.getNote().isBlank())) {
-                throw new IllegalOperationException("Bắt buộc nhập ghi chú khi lý do là OTHER");
+                throw new IllegalOperationException("Vui lòng nhập ghi chú chi tiết khi chọn lý do xuất hàng bất thường là Khác (OTHER).");
             }
 
             LotEntity lot = lotRepository.findById(input.getLotId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lô hàng id: " + input.getLotId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lô hàng (ID: " + input.getLotId() + "). Vui lòng kiểm tra lại mã lô."));
             ProductEntity product = lot.getProduct();
 
             // Quyết định #5 (Bước 0, ngoài SRS): chặn nếu lô đang có phiếu kiểm kê PENDING.
             if (stocktakeDetailRepository.existsByLot_IdAndStocktake_Status(lot.getId(), ApprovalStatusEnum.PENDING)) {
                 throw new IllegalOperationException(
-                        "Lô " + lot.getLotCode() + " đang có phiếu kiểm kê chờ duyệt, không thể tạo phiếu hàng bất thường");
+                        "Lô hàng " + lot.getLotCode() + " đang nằm trong phiếu kiểm kê chờ duyệt. Vui lòng hoàn tất kiểm kê trước khi báo cáo bất thường.");
             }
 
             // Validate tổ hợp (warehouse, product, lot, location) có thật trong tồn kho -
@@ -75,7 +75,7 @@ public class AbnormalStockServiceImpl implements AbnormalStockService {
                     .findByWarehouseIdAndProductIdAndLotIdAndLocationId(
                             warehouse.getId(), product.getId(), input.getLotId(), input.getLocationId())
                     .orElseThrow(() -> new ResourceNotFoundException(
-                            "Không tìm thấy tồn kho cho lô " + lot.getLotCode() + " tại vị trí đã chọn"));
+                            "Không tìm thấy số lượng tồn kho cho lô " + lot.getLotCode() + " tại vị trí lưu trữ này. Vui lòng kiểm tra lại thông tin."));
             StorageLocationEntity location = inventory.getLocation();
 
             details.add(AbnormalStockDetailEntity.builder()
@@ -160,7 +160,7 @@ public class AbnormalStockServiceImpl implements AbnormalStockService {
     public AbnormalStockResponse approve(Integer id, User actor) {
         AbnormalStockEntity abnormalStock = findAbnormalStockOrThrow(id);
         if (abnormalStock.getStatus() != ApprovalStatusEnum.PENDING) {
-            throw new IllegalOperationException("Phiếu đã được xử lý, không thể duyệt lại");
+            throw new IllegalOperationException("Phiếu xử lý hàng bất thường này đã được xử lý trước đó (Trạng thái: " + abnormalStock.getStatus() + "). Không thể duyệt lại.");
         }
 
         UserEntity approver = findUserOrThrow(actor);
@@ -197,7 +197,7 @@ public class AbnormalStockServiceImpl implements AbnormalStockService {
     public AbnormalStockResponse reject(Integer id, AbnormalStockRejectRequest request, User actor) {
         AbnormalStockEntity abnormalStock = findAbnormalStockOrThrow(id);
         if (abnormalStock.getStatus() != ApprovalStatusEnum.PENDING) {
-            throw new IllegalOperationException("Phiếu đã được xử lý, không thể từ chối");
+            throw new IllegalOperationException("Phiếu xử lý hàng bất thường này đã được xử lý trước đó (Trạng thái: " + abnormalStock.getStatus() + "). Không thể từ chối.");
         }
 
         UserEntity approver = findUserOrThrow(actor);
@@ -218,16 +218,16 @@ public class AbnormalStockServiceImpl implements AbnormalStockService {
 
     private WarehouseEntity findWarehouseOrThrow(Integer warehouseId) {
         return warehouseRepository.findById(warehouseId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kho id: " + warehouseId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kho hàng (ID: " + warehouseId + "). Kho hàng này có thể đã bị vô hiệu hóa hoặc xóa."));
     }
 
     private UserEntity findUserOrThrow(User actor) {
         return userRepository.findByEmail(actor.getUsername())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + actor.getUsername()));
+                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy thông tin tài khoản của bạn (Email: " + actor.getUsername() + "). Vui lòng thử đăng nhập lại."));
     }
 
     private AbnormalStockEntity findAbnormalStockOrThrow(Integer id) {
         return abnormalStockRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiếu hàng bất thường id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiếu xử lý hàng bất thường (ID: " + id + "). Phiếu này có thể không tồn tại."));
     }
 }

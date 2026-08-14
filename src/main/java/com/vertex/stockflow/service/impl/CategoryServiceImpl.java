@@ -35,19 +35,19 @@ public class CategoryServiceImpl implements CategoryService {
         CategoryEntity parent = null;
         if (request.getParentId() != null) {
             parent = categoryRepository.findById(request.getParentId())
-                    .orElseThrow(() -> new IllegalOperationException("Category cha không tồn tại"));
+                    .orElseThrow(() -> new IllegalOperationException("Không tìm thấy danh mục cha (ID: " + request.getParentId() + "). Vui lòng chọn một danh mục cha khác hợp lệ."));
         }
 
         boolean duplicateName = (request.getParentId() == null)
                 ? categoryRepository.existsByParentIsNullAndName(request.getName())
                 : categoryRepository.existsByParentIdAndName(request.getParentId(), request.getName());
         if (duplicateName) {
-            throw new DuplicateResourceException("Tên category đã tồn tại trong cùng danh mục cha");
+            throw new DuplicateResourceException("Tên danh mục '" + request.getName() + "' đã tồn tại trong cùng cấp. Vui lòng chọn tên khác để tránh trùng lặp.");
         }
 
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         UserEntity currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User hiện tại không tồn tại"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin tài khoản của bạn để xác thực phiên làm việc. Vui lòng đăng nhập lại."));
 
         CategoryEntity entity = CategoryEntity.builder()
                 .name(request.getName())
@@ -63,18 +63,18 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public CategoryResponse update(Integer id, CategoryRequest request) {
         CategoryEntity entity = categoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Category không tồn tại"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục (ID: " + id + "). Danh mục này có thể đã bị xóa."));
 
         CategoryEntity newParent = null;
         if (request.getParentId() != null) {
             newParent = categoryRepository.findById(request.getParentId())
-                    .orElseThrow(() -> new IllegalOperationException("Category cha không tồn tại"));
+                    .orElseThrow(() -> new IllegalOperationException("Không tìm thấy danh mục cha (ID: " + request.getParentId() + "). Vui lòng chọn một danh mục cha khác hợp lệ."));
 
             // Kiểm tra vòng lặp: duyệt ngược lên từ parent mới, nếu gặp lại chính mình thì là cycle
             CategoryEntity current = newParent;
             while (current != null) {
                 if (current.getId().equals(id)) {
-                    throw new IllegalOperationException("Không thể đặt category cha là chính nó hoặc là con cháu của nó");
+                    throw new IllegalOperationException("Không thể thiết lập danh mục cha là chính nó hoặc là danh mục con/cháu của nó. Điều này sẽ gây lỗi vòng lặp.");
                 }
                 current = current.getParent();
             }
@@ -84,7 +84,7 @@ public class CategoryServiceImpl implements CategoryService {
                 ? categoryRepository.existsByParentIsNullAndNameAndIdNot(request.getName(), id)
                 : categoryRepository.existsByParentIdAndNameAndIdNot(request.getParentId(), request.getName(), id);
         if (duplicateName) {
-            throw new DuplicateResourceException("Tên category đã tồn tại trong cùng danh mục cha");
+            throw new DuplicateResourceException("Tên danh mục '" + request.getName() + "' đã tồn tại trong cùng cấp. Vui lòng chọn tên khác để tránh trùng lặp.");
         }
 
         entity.setName(request.getName());
@@ -95,7 +95,7 @@ public class CategoryServiceImpl implements CategoryService {
 
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         entity.setUpdatedBy(userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User hiện tại không tồn tại")));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin tài khoản của bạn để xác thực phiên làm việc. Vui lòng đăng nhập lại.")));
 
         return categoryMapper.toResponse(categoryRepository.save(entity));
     }
@@ -103,13 +103,13 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public void delete(Integer id) {
         CategoryEntity entity = categoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Category không tồn tại"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục (ID: " + id + "). Danh mục này có thể đã bị xóa trước đó."));
 
         if (categoryRepository.existsByParentId(id)) {
-            throw new IllegalOperationException("Không thể xóa: category còn danh mục con");
+            throw new IllegalOperationException("Không thể xóa danh mục này vì nó vẫn còn chứa các danh mục con bên trong. Vui lòng xóa danh mục con trước.");
         }
         if (productRepository.existsByCategoryId(id)) {
-            throw new IllegalOperationException("Không thể xóa: category còn sản phẩm đang sử dụng");
+            throw new IllegalOperationException("Không thể xóa danh mục này vì đang có sản phẩm thuộc danh mục này. Vui lòng cập nhật sản phẩm sang danh mục khác trước khi xóa.");
         }
 
         categoryRepository.delete(entity);
@@ -118,7 +118,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public CategoryResponse deactivate(Integer id) {
         CategoryEntity entity = categoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Category không tồn tại"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục (ID: " + id + "). Danh mục này có thể đã bị xóa."));
         entity.setStatus(StatusEnum.INACTIVE);
         return categoryMapper.toResponse(categoryRepository.save(entity));
     }
@@ -126,7 +126,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public CategoryResponse activate(Integer id) {
         CategoryEntity entity = categoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Category không tồn tại"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục (ID: " + id + "). Danh mục này có thể đã bị xóa."));
         entity.setStatus(StatusEnum.ACTIVE);
         return categoryMapper.toResponse(categoryRepository.save(entity));
     }
@@ -134,7 +134,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public CategoryResponse getById(Integer id) {
         CategoryEntity entity = categoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Category không tồn tại"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục (ID: " + id + "). Danh mục này có thể đã bị xóa."));
         return categoryMapper.toResponse(entity);
     }
 

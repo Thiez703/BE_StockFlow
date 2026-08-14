@@ -48,7 +48,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public UserResponse getCurrentUser(String email) {
         UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin người dùng với email: " + email + ". Tài khoản này có thể đã bị xóa hoặc không tồn tại."));
         return UserResponse.builder()
                 .id(user.getId())
                 .email(user.getEmail())
@@ -63,14 +63,14 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public void changePassword(ChangePasswordRequest request, User actor) {
         UserEntity user = userRepository.findByEmail(actor.getUsername())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin tài khoản của bạn. Vui lòng thử đăng nhập lại."));
 
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash())) {
-            throw new BadCredentialsException("Mật khẩu cũ không đúng");
+            throw new BadCredentialsException("Mật khẩu cũ không chính xác. Vui lòng kiểm tra và nhập lại.");
         }
 
         if (passwordEncoder.matches(request.getNewPassword(), user.getPasswordHash())) {
-            throw new IllegalOperationException("Mật khẩu mới không được trùng mật khẩu cũ");
+            throw new IllegalOperationException("Mật khẩu mới không được trùng với mật khẩu hiện tại. Vui lòng chọn một mật khẩu khác.");
         }
 
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
