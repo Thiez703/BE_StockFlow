@@ -6,5 +6,7 @@ public enum RefTypeEnum {
     OUTBOUND,
     OUTBOUND_VOID,
     STOCKTAKE,
-    ABNORMAL
+    ABNORMAL,
+    TRANSFER,
+    TRANSFER_VOID
 }

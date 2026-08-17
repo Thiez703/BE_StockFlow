@@ -26,7 +26,7 @@ public class InventoryTransactionServiceImpl implements InventoryTransactionServ
     private final InboundRepository inboundRepository;
     private final OutboundRepository outboundRepository;
     private final StocktakeRepository stocktakeRepository;
-    private final AbnormalStockRepository abnormalStockRepository;
+    private final TransferRepository transferRepository;
 
     @Override
     public Page<InventoryTransactionResponse> search(Integer productId, Integer lotId, Integer locationId,
@@ -110,10 +110,25 @@ public class InventoryTransactionServiceImpl implements InventoryTransactionServ
                     refCodeMap.put(RefTypeEnum.STOCKTAKE + ":" + e.getId(), e.getCode()));
         }
 
-        Set<Integer> abnormalIds = refIdsByType.getOrDefault(RefTypeEnum.ABNORMAL, Collections.emptySet());
-        if (!abnormalIds.isEmpty()) {
-            abnormalStockRepository.findAllById(abnormalIds).forEach(e ->
-                    refCodeMap.put(RefTypeEnum.ABNORMAL + ":" + e.getId(), e.getCode()));
+        Set<Integer> transferIds = new HashSet<>();
+        if (refIdsByType.containsKey(RefTypeEnum.TRANSFER)) {
+            transferIds.addAll(refIdsByType.get(RefTypeEnum.TRANSFER));
+        }
+        if (refIdsByType.containsKey(RefTypeEnum.TRANSFER_VOID)) {
+            transferIds.addAll(refIdsByType.get(RefTypeEnum.TRANSFER_VOID));
+        }
+        if (!transferIds.isEmpty()) {
+            transferRepository.findAllById(transferIds).forEach(e -> {
+                String code = e.getCode();
+                if (refIdsByType.containsKey(RefTypeEnum.TRANSFER) &&
+                        refIdsByType.get(RefTypeEnum.TRANSFER).contains(e.getId())) {
+                    refCodeMap.put(RefTypeEnum.TRANSFER + ":" + e.getId(), code);
+                }
+                if (refIdsByType.containsKey(RefTypeEnum.TRANSFER_VOID) &&
+                        refIdsByType.get(RefTypeEnum.TRANSFER_VOID).contains(e.getId())) {
+                    refCodeMap.put(RefTypeEnum.TRANSFER_VOID + ":" + e.getId(), code);
+                }
+            });
         }
     }
 }

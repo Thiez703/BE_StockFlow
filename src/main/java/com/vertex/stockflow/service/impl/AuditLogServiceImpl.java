@@ -30,7 +30,7 @@ public class AuditLogServiceImpl implements AuditLogService {
     @Override
     public void log(User actor, AuditAction action, String entityType, Integer entityId, String detail) {
         UserEntity actorEntity = userRepository.findByEmail(actor.getUsername())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + actor.getUsername()));
+                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy thông tin người dùng. Phiên đăng nhập có thể đã hết hạn."));
 
         AuditLogEntity entry = new AuditLogEntity();
         entry.setUser(actorEntity);

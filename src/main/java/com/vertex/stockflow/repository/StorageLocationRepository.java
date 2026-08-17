@@ -1,6 +1,6 @@
 package com.vertex.stockflow.repository;
 
-import com.vertex.stockflow.dto.response.StorageMapCellResponse;
+import com.vertex.stockflow.dto.response.StorageMapRawRow;
 import com.vertex.stockflow.entity.StorageLocationEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -39,16 +39,16 @@ public interface StorageLocationRepository extends JpaRepository<StorageLocation
      * gom nhóm tuần tự là ra đúng thứ tự A->F, 1->6.
      */
     @Query("""
-            SELECT new com.vertex.stockflow.dto.response.StorageMapCellResponse(
-                sl.id, sl.locationCode, sl.rowLabel, sl.colIndex,
+            SELECT new com.vertex.stockflow.dto.response.StorageMapRawRow(
+                sl.id, sl.locationCode, sl.rowLabel, sl.colIndex, sl.capacity,
                 l.id, l.lotCode, l.expDate,
                 p.id, p.code, p.name, p.unit, i.quantity, p.minStock)
             FROM StorageLocationEntity sl
-            LEFT JOIN InventoryEntity i ON i.location = sl
+            LEFT JOIN InventoryEntity i ON i.location = sl AND i.quantity > 0
             LEFT JOIN i.lot l
             LEFT JOIN i.product p
             WHERE sl.warehouse.id = :warehouseId
             ORDER BY sl.rowLabel, sl.colIndex
             """)
-    List<StorageMapCellResponse> findStorageMapByWarehouseId(@Param("warehouseId") Integer warehouseId);
+    List<StorageMapRawRow> findStorageMapByWarehouseId(@Param("warehouseId") Integer warehouseId);
 }

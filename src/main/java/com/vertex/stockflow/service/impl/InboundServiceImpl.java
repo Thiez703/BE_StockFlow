@@ -61,7 +61,7 @@ public class InboundServiceImpl implements InboundService {
 
         // BR-01: POSTED ngay, không có DRAFT
         InboundEntity inbound = InboundEntity.builder()
-                .code("TEMP")
+                .code("TEMP-" + java.util.UUID.randomUUID().toString().substring(0, 8))
                 .supplier(supplier)
                 .warehouse(warehouse)
                 .createdBy(createdBy)
@@ -231,6 +231,6 @@ public class InboundServiceImpl implements InboundService {
 
     private UserEntity findUserOrThrow(User actor) {
         return userRepository.findByEmail(actor.getUsername())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + actor.getUsername()));
+                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy thông tin người dùng. Phiên đăng nhập có thể đã hết hạn."));
     }
 }

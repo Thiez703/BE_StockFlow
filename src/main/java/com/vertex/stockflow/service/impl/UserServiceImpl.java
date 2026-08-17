@@ -40,7 +40,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserManagementResponse create(CreateUserRequest request, User actor) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new DuplicateResourceException("Email already exists: " + request.getEmail());
+            throw new DuplicateResourceException("Email " + request.getEmail() + " đã được đăng ký cho một tài khoản khác.");
         }
 
         String rawPassword = passwordGenerator.generate();
@@ -65,7 +65,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserManagementResponse update(Integer id, UpdateUserRequest request, User actor) {
         UserEntity user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin tài khoản. Có thể dữ liệu đã bị xóa."));
         user.setFullName(request.getFullName());
         user.setPhone(request.getPhone());
         userRepository.save(user);
@@ -78,7 +78,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void lock(Integer id, User actor) {
-        UserEntity user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        UserEntity user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin tài khoản. Có thể dữ liệu đã bị xóa."));
         user.setIsActive(false);
         userRepository.save(user);
         auditLogService.log(actor, AuditAction.LOCK_USER, "users", id, "Khóa tài khoản " + user.getEmail());
@@ -87,7 +87,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void unlock(Integer id, User actor) {
-        UserEntity user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        UserEntity user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin tài khoản. Có thể dữ liệu đã bị xóa."));
         user.setIsActive(true);
         userRepository.save(user);
         auditLogService.log(actor, AuditAction.UNLOCK_USER, "users", id, "Mở khóa tài khoản " + user.getEmail());
@@ -96,7 +96,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserManagementResponse assignRole(Integer id, AssignRoleRequest request, User actor) {
-        UserEntity user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        UserEntity user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin tài khoản. Có thể dữ liệu đã bị xóa."));
         String oldRole = user.getRole().name();
         user.setRole(request.getRole());
         userRepository.save(user);
@@ -109,7 +109,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void resetPassword(Integer id, User actor) {
-        UserEntity user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        UserEntity user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin tài khoản. Có thể dữ liệu đã bị xóa."));
         String rawPassword = passwordGenerator.generate();
         user.setPasswordHash(passwordEncoder.encode(rawPassword));
         user.setMustChangePassword(true);
@@ -128,7 +128,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserManagementResponse getById(Integer id) {
-        UserEntity user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        UserEntity user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin tài khoản. Có thể dữ liệu đã bị xóa."));
         return userMapper.toResponse(user);
     }
 }

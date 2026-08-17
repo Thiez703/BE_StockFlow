@@ -5,8 +5,7 @@ import com.vertex.stockflow.exception.IllegalOperationException;
 import org.springframework.stereotype.Component;
 
 // BR-04 (người duyệt khác người lập) + BR-05 (người duyệt cấp bậc cao hơn) -
-// dùng chung cho StocktakeServiceImpl và AbnormalStockServiceImpl, tách ra đây để tránh
-// 2 bản logic giống hệt nhau bị lệch nếu sau này BR-05 thay đổi mà chỉ sửa 1 trong 2 nơi.
+// dùng chung cho các service cần duyệt phiếu, tách ra đây để tránh trùng lặp logic.
 @Component
 public class ApprovalPolicy {
 

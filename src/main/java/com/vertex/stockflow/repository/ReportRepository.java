@@ -102,7 +102,7 @@ public interface ReportRepository extends JpaRepository<InventoryTransactionEnti
             JOIN warehouses w ON w.id = s.warehouse_id
             JOIN products p ON p.id = sd.product_id
             JOIN lots l ON l.id = sd.lot_id
-            JOIN storage_locations sl ON sl.id = sd.location_id
+            LEFT JOIN storage_locations sl ON sl.id = sd.location_id
             WHERE s.status = 'APPROVED'
               AND s.approved_at >= :fromDate
               AND s.approved_at <= :toDate

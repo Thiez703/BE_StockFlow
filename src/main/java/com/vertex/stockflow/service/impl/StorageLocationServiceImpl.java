@@ -39,15 +39,15 @@ public class StorageLocationServiceImpl implements StorageLocationService {
         // Kho phải tồn tại thì mới gắn vị trí vào được
         WarehouseEntity warehouse = warehouseRepository.findById(request.getWarehouseId())
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Warehouse not found with id: " + request.getWarehouseId()));
+                        "Không tìm thấy thông tin kho hàng. Có thể kho hàng này đã bị xóa."));
 
         // Kiểm tra theo TOẠ ĐỘ chứ không theo mã.
         // Toạ độ mới là thứ định danh ô trên lưới; mã chỉ là hệ quả của toạ độ.
         if (storageLocationRepository.existsByWarehouseIdAndRowLabelAndColIndex(
                 warehouse.getId(), request.getRowLabel(), request.getColIndex())) {
             throw new DuplicateResourceException(
-                    "Position " + request.getRowLabel() + "-" + request.getColIndex()
-                            + " is already occupied in this warehouse");
+                    "Vị trí " + request.getRowLabel() + "-" + request.getColIndex()
+                            + " đã tồn tại trong kho này.");
         }
 
         // Sinh mã tại đây, client không được quyết định.
@@ -58,6 +58,7 @@ public class StorageLocationServiceImpl implements StorageLocationService {
                 .rowLabel(request.getRowLabel())
                 .colIndex(request.getColIndex())
                 .locationCode(locationCode)
+                .capacity(request.getCapacity())
                 .build();
 
         return toResponse(storageLocationRepository.save(entity));
@@ -73,12 +74,13 @@ public class StorageLocationServiceImpl implements StorageLocationService {
         if (storageLocationRepository.existsByWarehouseIdAndRowLabelAndColIndexAndIdNot(
                 entity.getWarehouse().getId(), request.getRowLabel(), request.getColIndex(), id)) {
             throw new DuplicateResourceException(
-                    "Position " + request.getRowLabel() + "-" + request.getColIndex()
-                            + " is already occupied in this warehouse");
+                    "Vị trí " + request.getRowLabel() + "-" + request.getColIndex()
+                            + " đã tồn tại trong kho này.");
         }
 
         entity.setRowLabel(request.getRowLabel());
         entity.setColIndex(request.getColIndex());
+        entity.setCapacity(request.getCapacity());
 
         // Toạ độ đổi thì mã phải đổi theo, nếu không sẽ lệch:
         // bản ghi nằm ở (B,3) mà mã vẫn ghi "A-01".
@@ -101,7 +103,7 @@ public class StorageLocationServiceImpl implements StorageLocationService {
     @Override
     public List<StorageLocationResponse> getByWarehouseId(Integer warehouseId) {
         if (!warehouseRepository.existsById(warehouseId)) {
-            throw new ResourceNotFoundException("Warehouse not found with id: " + warehouseId);
+            throw new ResourceNotFoundException("Không tìm thấy thông tin kho hàng. Có thể kho hàng này đã bị xóa.");
         }
         return storageLocationRepository.findByWarehouseId(warehouseId).stream()
                 .map(this::toResponse)
@@ -176,19 +178,20 @@ public class StorageLocationServiceImpl implements StorageLocationService {
 
     private StorageLocationEntity findEntityOrThrow(Integer id) {
         return storageLocationRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Storage location not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin vị trí lưu trữ. Có thể dữ liệu đã bị xóa."));
     }
 
     private StorageLocationResponse toResponse(StorageLocationEntity entity) {
-        return new StorageLocationResponse(
-                entity.getId(),
-                entity.getWarehouse().getId(),
-                entity.getRowLabel(),
-                entity.getColIndex(),
-                entity.getLocationCode(),
-                entity.getStatus().name(),
-                entity.getCreatedAt(),
-                entity.getUpdatedAt()
-        );
+        StorageLocationResponse res = new StorageLocationResponse();
+        res.setId(entity.getId());
+        res.setWarehouseId(entity.getWarehouse().getId());
+        res.setRowLabel(entity.getRowLabel());
+        res.setColIndex(entity.getColIndex());
+        res.setLocationCode(entity.getLocationCode());
+        res.setCapacity(entity.getCapacity());
+        res.setStatus(entity.getStatus().name());
+        res.setCreatedAt(entity.getCreatedAt());
+        res.setUpdatedAt(entity.getUpdatedAt());
+        return res;
     }
 }

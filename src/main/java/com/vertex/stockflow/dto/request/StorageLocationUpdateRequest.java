@@ -25,6 +25,6 @@ public class StorageLocationUpdateRequest {
     @Max(6)
     private Integer colIndex;
 
-    // Update giờ nghĩa là "dời vị trí này sang ô khác trên lưới".
-    // locationCode được sinh lại theo toạ độ mới.
+    @Min(1)
+    private Integer capacity;          // sức chứa tối đa (Thùng), null = không giới hạn
 }

@@ -5,61 +5,29 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDate;
+import java.util.List;
 
 /**
- * 1 ô trên sơ đồ. Cố ý để PHẲNG (không lồng object lot/product bên trong)
- * để FE chỉ cần check status == EMPTY thay vì phải cell.lot?.lotCode khắp nơi.
+ * 1 ô trên sơ đồ = 1 vị trí lưu trữ.
+ * Một vị trí có thể chứa nhiều lô/sản phẩm (occupants).
+ * Cell trạng thái EMPTY khi occupants rỗng.
  */
 @Getter
 @Setter
 @NoArgsConstructor
 public class StorageMapCellResponse {
 
-    // --- Thông tin vị trí: LUÔN có, kể cả ô trống ---
+    // --- Thông tin vị trí ---
     private Integer locationId;
     private String locationCode;      // "A-01"
     private String rowLabel;          // "A"
     private Integer colIndex;         // 1
+    private Integer capacity;         // sức chứa tối đa (Thùng), null = không giới hạn
+    private Integer usedQuantity;     // tổng quantity tất cả occupant
 
-    // --- Trạng thái: KHÔNG lấy từ DB, được Service tính rồi set vào ---
+    // --- Trạng thái tổng hợp: EMPTY nếu không có occupant, ngược lại = worst status ---
     private LocationStatusEnum status;
 
-    // --- Thông tin lô: null khi ô trống ---
-    private Integer lotId;
-    private String lotCode;
-    private LocalDate expDate;
-    private Integer daysToExpiry;     // cũng do Service tính, không có trong DB
-
-    // --- Thông tin sản phẩm: null khi ô trống ---
-    private Integer productId;
-    private String productCode;       // "SP-003"
-    private String productName;
-    private String unit;              // "Lon"
-    private Integer quantity;         // tồn kho hiện tại của lô này tại ô này
-    private Integer minStock;         // định mức tối thiểu; null -> FE hiện "-"
-
-    /**
-     * Constructor riêng cho JPQL constructor expression.
-     * KHÔNG có status và daysToExpiry vì 2 field đó không lấy được từ DB.
-     * Thứ tự tham số ở đây phải khớp TUYỆT ĐỐI với thứ tự cột trong câu SELECT new (...).
-     */
-    public StorageMapCellResponse(Integer locationId, String locationCode, String rowLabel, Integer colIndex,
-                                  Integer lotId, String lotCode, LocalDate expDate,
-                                  Integer productId, String productCode, String productName,
-                                  String unit, Integer quantity, Integer minStock) {
-        this.locationId = locationId;
-        this.locationCode = locationCode;
-        this.rowLabel = rowLabel;
-        this.colIndex = colIndex;
-        this.lotId = lotId;
-        this.lotCode = lotCode;
-        this.expDate = expDate;
-        this.productId = productId;
-        this.productCode = productCode;
-        this.productName = productName;
-        this.unit = unit;
-        this.quantity = quantity;
-        this.minStock = minStock;
-    }
+    // --- Danh sách lô hàng đang chiếm vị trí này ---
+    private List<OccupantResponse> occupants;
 }

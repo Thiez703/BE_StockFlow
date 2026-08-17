@@ -10,6 +10,11 @@ import java.util.List;
 import java.util.Optional;
 
 public interface InventoryRepository extends JpaRepository<InventoryEntity, Integer>, JpaSpecificationExecutor<InventoryEntity> {
+    List<InventoryEntity> findAllByLocationId(Integer locationId);
+
+    @Query("SELECT COALESCE(SUM(i.quantity), 0) FROM InventoryEntity i WHERE i.location.id = :locationId")
+    int sumQuantityByLocationId(@Param("locationId") Integer locationId);
+
     Optional<InventoryEntity> findByWarehouseIdAndProductIdAndLotIdAndLocationId(
             Integer warehouseId, Integer productId, Integer lotId, Integer locationId);
 

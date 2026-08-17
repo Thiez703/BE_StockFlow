@@ -1,23 +1,21 @@
 package com.vertex.stockflow.dto.response;
 
-import com.vertex.stockflow.common.enums.AbnormalReasonEnum;
 import lombok.*;
 
 @Getter
 @Setter
-@AllArgsConstructor
-@NoArgsConstructor
 @Builder
-public class AbnormalStockDetailResponse {
+public class TransferDetailResponse {
     private Integer id;
     private Integer productId;
     private String productCode;
     private String productName;
+    private String unit;
     private Integer lotId;
     private String lotCode;
-    private Integer locationId;
-    private String locationCode;
+    private Integer fromLocationId;
+    private String fromLocationCode;
+    private Integer toLocationId;
+    private String toLocationCode;
     private Integer quantity;
-    private AbnormalReasonEnum reasonType;
-    private String note;
 }

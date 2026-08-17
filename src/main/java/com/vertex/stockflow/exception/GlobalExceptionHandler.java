@@ -48,30 +48,30 @@ public class GlobalExceptionHandler {
         for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
             errors.put(fieldError.getField(), fieldError.getDefaultMessage());
         }
-        return build(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", "Validation failed", request, errors);
+        return build(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", "Dữ liệu không hợp lệ, vui lòng kiểm tra lại", request, errors);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
-        return build(HttpStatus.FORBIDDEN, "ACCESS_DENIED", ex.getMessage(), request, null);
+        return build(HttpStatus.FORBIDDEN, "ACCESS_DENIED", "Bạn không có quyền thực hiện thao tác này", request, null);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleUnreadable(HttpMessageNotReadableException ex, HttpServletRequest request) {
-        return build(HttpStatus.BAD_REQUEST, "INVALID_REQUEST_BODY", "Request body is invalid or missing", request, null);
+        return build(HttpStatus.BAD_REQUEST, "INVALID_REQUEST_BODY", "Yêu cầu không hợp lệ hoặc thiếu thông tin", request, null);
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ErrorResponse> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex, HttpServletRequest request) {
-        return build(HttpStatus.METHOD_NOT_ALLOWED, "METHOD_NOT_ALLOWED", ex.getMessage(), request, null);
+        return build(HttpStatus.METHOD_NOT_ALLOWED, "METHOD_NOT_ALLOWED", "Hành động này không được hỗ trợ", request, null);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex, HttpServletRequest request) {
-        return build(HttpStatus.CONFLICT, "DATA_INTEGRITY_VIOLATION", "Data integrity violation", request, null);
+        return build(HttpStatus.CONFLICT, "DATA_INTEGRITY_VIOLATION", "Không thể lưu hoặc xóa thông tin này do nó đang được liên kết với dữ liệu khác", request, null);
     }
 
-    // Xung đột ghi đồng thời trên cột version (InventoryEntity/StocktakeEntity/AbnormalStockEntity) -
+    // Xung đột ghi đồng thời trên cột version (InventoryEntity/StocktakeEntity) -
     // xảy ra khi 2 request cùng sửa 1 dòng gần như đồng thời (vd 2 người cùng duyệt 1 phiếu).
     // Bắt ConcurrencyFailureException (lớp cha) thay vì chỉ ObjectOptimisticLockingFailureException,
     // vì test thực tế 2 request duyệt song song cho thấy MySQL có thể trả về deadlock thật

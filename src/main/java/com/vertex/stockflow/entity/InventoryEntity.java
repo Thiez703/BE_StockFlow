@@ -14,13 +14,9 @@ import java.time.LocalDateTime;
                         name = "uk_inventory_warehouse_product_lot_location",
                         columnNames = {"warehouse_id", "product_id", "lot_id", "location_id"}
                 ),
-                // Ràng buộc MỚI: 1 vị trí chỉ được có tối đa 1 dòng inventory
-                // => hiện thực hoá luật "1 vị trí = 1 lô" ở tầng DB, không phụ thuộc code.
-                // Nhờ nó mà mỗi ô trên sơ đồ luôn chỉ có đúng 1 lô để hiển thị.
-                @UniqueConstraint(
-                        name = "uk_inventory_location",
-                        columnNames = {"location_id"}
-                )
+                // Đã bỏ uk_inventory_location — 1 vị trí giờ được chứa nhiều lô/sản phẩm,
+                // giới hạn bằng capacity của StorageLocationEntity thay vì cứng 1 lô.
+                // Chạy thủ công trên DB: ALTER TABLE inventory DROP INDEX uk_inventory_location;
         }
 )
 @Getter

@@ -1,1 +1,0 @@
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder; public class Test { public static void main(String[] args) { BCryptPasswordEncoder e = new BCryptPasswordEncoder(); System.out.println(e.matches("123456", "$2a$10$wY9dF0Yy.eT1D//lH/o0eOzM6y9pM2L4NlH60S6kC/2P1b2m5E/.G")); } }

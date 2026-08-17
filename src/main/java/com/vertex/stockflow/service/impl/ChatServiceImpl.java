@@ -32,15 +32,15 @@ public class ChatServiceImpl implements ChatService {
     @Transactional
     public MessageResponse processChat(ChatRequest request, User actor) {
         UserEntity currentUser = userRepository.findByEmail(actor.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin người dùng. Phiên đăng nhập có thể đã hết hạn."));
 
         ConversationEntity conversation;
 
         if (request.getConversationId() != null) {
             conversation = conversationRepository.findById(request.getConversationId())
-                    .orElseThrow(() -> new RuntimeException("Conversation not found"));
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin cuộc trò chuyện. Có thể dữ liệu đã bị xóa."));
             if (!conversation.getUser().getId().equals(currentUser.getId())) {
-                throw new RuntimeException("Access Denied");
+                throw new RuntimeException("Bạn không có quyền thực hiện thao tác này");
             }
         } else {
             conversation = ConversationEntity.builder()
@@ -88,7 +88,7 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public List<ConversationResponse> getMyConversations(User actor) {
         UserEntity currentUser = userRepository.findByEmail(actor.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin người dùng. Phiên đăng nhập có thể đã hết hạn."));
         return conversationRepository.findAllByUserIdOrderByCreatedAtDesc(currentUser.getId())
                 .stream().map(conv -> ConversationResponse.builder()
                         .id(conv.getId()).title(conv.getTitle()).createdAt(conv.getCreatedAt()).build())
@@ -98,11 +98,11 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public List<MessageResponse> getConversationMessages(Integer conversationId, User actor) {
         UserEntity currentUser = userRepository.findByEmail(actor.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin người dùng. Phiên đăng nhập có thể đã hết hạn."));
         ConversationEntity conversation = conversationRepository.findById(conversationId)
-                .orElseThrow(() -> new RuntimeException("Conversation not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin cuộc trò chuyện. Có thể dữ liệu đã bị xóa."));
         if (!conversation.getUser().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("Access Denied");
+            throw new RuntimeException("Bạn không có quyền thực hiện thao tác này");
         }
         return messageRepository.findAllByConversationIdOrderByCreatedAtAsc(conversationId)
                 .stream().map(msg -> MessageResponse.builder()
@@ -115,11 +115,11 @@ public class ChatServiceImpl implements ChatService {
     @Transactional
     public void deleteConversation(Integer conversationId, User actor) {
         UserEntity currentUser = userRepository.findByEmail(actor.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin người dùng. Phiên đăng nhập có thể đã hết hạn."));
         ConversationEntity conversation = conversationRepository.findById(conversationId)
-                .orElseThrow(() -> new RuntimeException("Conversation not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin cuộc trò chuyện. Có thể dữ liệu đã bị xóa."));
         if (!conversation.getUser().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("Access Denied");
+            throw new RuntimeException("Bạn không có quyền thực hiện thao tác này");
         }
         
         messageRepository.deleteAllByConversationId(conversationId);

@@ -30,7 +30,6 @@ public class StorageLocationCreateRequest {
     @Max(6)                            // trần cứng theo lưới 6 cột của giao diện
     private Integer colIndex;          // số cột: 1..6
 
-    // ĐÃ XOÁ: private String locationCode;
-    // Mã vị trí giờ do Service tự sinh từ rowLabel + colIndex.
-    // Cho người dùng nhập tay sẽ dẫn tới lệch dữ liệu: toạ độ (A,1) mà mã ghi "B-05".
+    @Min(1)                            // capacity phải >= 1 nếu có giá trị
+    private Integer capacity;          // sức chứa tối đa (Thùng), null = không giới hạn
 }

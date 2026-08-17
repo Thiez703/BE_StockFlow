@@ -3,7 +3,7 @@ package com.vertex.stockflow.controller;
 import com.vertex.stockflow.dto.request.StocktakeCreateRequest;
 import com.vertex.stockflow.dto.request.StocktakeRejectRequest;
 import com.vertex.stockflow.dto.response.StocktakeResponse;
-import com.vertex.stockflow.dto.response.StorageMapCellResponse;
+import com.vertex.stockflow.dto.response.StorageMapRawRow;
 import com.vertex.stockflow.service.StocktakeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +28,7 @@ public class StocktakeController {
     // Khung tồn kho hiện tại của kho để FE dựng form đếm trước khi tạo phiếu (quyết định #2).
     @GetMapping("/inventory-snapshot")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER','ACCOUNTANT','STAFF')")
-    public ResponseEntity<List<StorageMapCellResponse>> getInventorySnapshot(@RequestParam Integer warehouseId) {
+    public ResponseEntity<List<StorageMapRawRow>> getInventorySnapshot(@RequestParam Integer warehouseId) {
         return ResponseEntity.ok(stocktakeService.getInventorySnapshot(warehouseId));
     }
 
@@ -51,8 +51,9 @@ public class StocktakeController {
 
     // Chi tiết phiếu — mở cho mọi role đã xác thực (STAFF xem phiếu do mình lập).
     @GetMapping("/{id}")
-    public ResponseEntity<StocktakeResponse> getById(@PathVariable Integer id) {
-        return ResponseEntity.ok(stocktakeService.getById(id));
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','ACCOUNTANT','STAFF')")
+    public ResponseEntity<StocktakeResponse> getById(@PathVariable Integer id, @AuthenticationPrincipal User actor) {
+        return ResponseEntity.ok(stocktakeService.getById(id, actor));
     }
 
     // Duyệt/từ chối - ma trận D (BR-05): chỉ ADMIN và ACCOUNTANT.

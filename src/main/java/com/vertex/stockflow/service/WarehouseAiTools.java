@@ -30,7 +30,7 @@ public class WarehouseAiTools {
     private final InboundRepository inboundRepository;
     private final OutboundRepository outboundRepository;
     private final StocktakeRepository stocktakeRepository;
-    private final AbnormalStockRepository abnormalStockRepository;
+    private final TransferRepository transferRepository;
     private final ReportRepository reportRepository;
     private final InventoryTransactionRepository inventoryTransactionRepository;
 
@@ -81,9 +81,9 @@ public class WarehouseAiTools {
         return stocktakeRepository.count();
     }
 
-    @Tool("Đếm tổng số phiếu xử lý hàng bất thường (abnormal stock) hiện có trong hệ thống")
-    public long countAbnormalStocks() {
-        return abnormalStockRepository.count();
+    @Tool("Đếm tổng số phiếu điều chuyển vị trí hiện có trong hệ thống")
+    public long countTransfers() {
+        return transferRepository.count();
     }
 
     // ==================== DANH SÁCH SẢN PHẨM ====================
@@ -347,22 +347,22 @@ public class WarehouseAiTools {
         return "Tổng " + page.getTotalElements() + " phiếu kiểm kê (hiển thị 20 gần nhất):\n" + data;
     }
 
-    // ==================== PHIẾU HÀNG BẤT THƯỜNG ====================
+    // ==================== PHIẾU ĐIỀU CHUYỂN ====================
 
-    @Tool("Lấy danh sách phiếu xử lý hàng bất thường (abnormal stock) gần nhất, tối đa 20 phiếu")
-    public String listRecentAbnormalStocks() {
-        Page<AbnormalStockEntity> page = abnormalStockRepository.findAll(
+    @Tool("Lấy danh sách phiếu điều chuyển (transfer) gần nhất, tối đa 20 phiếu")
+    public String listRecentTransfers() {
+        Page<TransferEntity> page = transferRepository.findAll(
                 PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "createdAt")));
-        List<AbnormalStockEntity> list = page.getContent();
-        if (list.isEmpty()) return "Chưa có phiếu xử lý hàng bất thường nào.";
+        List<TransferEntity> list = page.getContent();
+        if (list.isEmpty()) return "Chưa có phiếu điều chuyển nào.";
         String data = list.stream()
-                .map(a -> String.format("- Mã: %s | Kho: %s | Trạng thái: %s | Ngày tạo: %s",
-                        a.getCode(),
-                        a.getWarehouse().getName(),
-                        a.getStatus(),
-                        a.getCreatedAt() != null ? a.getCreatedAt().toLocalDate() : "N/A"))
+                .map(t -> String.format("- Mã: %s | Kho: %s | Trạng thái: %s | Ngày tạo: %s",
+                        t.getCode(),
+                        t.getWarehouse().getName(),
+                        t.getStatus(),
+                        t.getCreatedAt() != null ? t.getCreatedAt().toLocalDate() : "N/A"))
                 .collect(Collectors.joining("\n"));
-        return "Tổng " + page.getTotalElements() + " phiếu hàng bất thường (hiển thị 20 gần nhất):\n" + data;
+        return "Tổng " + page.getTotalElements() + " phiếu điều chuyển (hiển thị 20 gần nhất):\n" + data;
     }
 
     // ==================== BÁO CÁO ====================
@@ -408,7 +408,7 @@ public class WarehouseAiTools {
 
     // ==================== TỔNG QUAN HỆ THỐNG ====================
 
-    @Tool("Lấy tổng quan toàn bộ hệ thống kho hàng: tổng sản phẩm, nhà kho, nhà cung cấp, khách hàng, lô hàng, phiếu nhập, phiếu xuất, phiếu kiểm kê, phiếu hàng bất thường")
+    @Tool("Lấy tổng quan toàn bộ hệ thống kho hàng: tổng sản phẩm, nhà kho, nhà cung cấp, khách hàng, lô hàng, phiếu nhập, phiếu xuất, phiếu kiểm kê, phiếu điều chuyển")
     public String getSystemOverview() {
         return String.format(
                 "Tổng quan hệ thống StockFlow:\n" +
@@ -421,7 +421,7 @@ public class WarehouseAiTools {
                 "- Phiếu nhập kho: %d\n" +
                 "- Phiếu xuất kho: %d\n" +
                 "- Phiếu kiểm kê: %d\n" +
-                "- Phiếu hàng bất thường: %d",
+                "- Phiếu điều chuyển: %d",
                 productRepository.count(),
                 warehouseRepository.count(),
                 categoryRepository.count(),
@@ -431,7 +431,7 @@ public class WarehouseAiTools {
                 inboundRepository.count(),
                 outboundRepository.count(),
                 stocktakeRepository.count(),
-                abnormalStockRepository.count()
+                transferRepository.count()
         );
     }
 }

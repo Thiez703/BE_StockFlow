@@ -47,6 +47,9 @@ public class StorageLocationEntity {
     @Column(name = "location_code", nullable = false, length = 20)
     private String locationCode;
 
+    @Column(name = "capacity")
+    private Integer capacity;          // sức chứa tối đa (đơn vị: Thùng), null = không giới hạn
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     @Builder.Default

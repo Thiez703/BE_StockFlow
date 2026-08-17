@@ -8,7 +8,7 @@ import com.vertex.stockflow.dto.request.StocktakeCreateRequest;
 import com.vertex.stockflow.dto.request.StocktakeDetailInput;
 import com.vertex.stockflow.dto.request.StocktakeRejectRequest;
 import com.vertex.stockflow.dto.response.StocktakeResponse;
-import com.vertex.stockflow.dto.response.StorageMapCellResponse;
+import com.vertex.stockflow.dto.response.StorageMapRawRow;
 import com.vertex.stockflow.entity.*;
 import com.vertex.stockflow.exception.IllegalOperationException;
 import com.vertex.stockflow.exception.ResourceNotFoundException;
@@ -42,24 +42,16 @@ public class StocktakeServiceImpl implements StocktakeService {
     private final UserRepository userRepository;
     private final StocktakeRepository stocktakeRepository;
     private final StocktakeDetailRepository stocktakeDetailRepository;
-    private final AbnormalStockDetailRepository abnormalStockDetailRepository;
     private final InventoryService inventoryService;
     private final AuditLogService auditLogService;
     private final ApprovalPolicy approvalPolicy;
 
     @Override
     @Transactional(readOnly = true)
-    public List<StorageMapCellResponse> getInventorySnapshot(Integer warehouseId) {
+    public List<StorageMapRawRow> getInventorySnapshot(Integer warehouseId) {
         findWarehouseOrThrow(warehouseId);
-        // Tái dùng query đã có sẵn cho Dashboard (storage-map) thay vì viết query mới -
-        // nó đã trả đúng dữ liệu cần: location, lot, product, quantity theo từng vị trí.
-        // Lọc bỏ ô trống (không có lô) vì không có gì để đếm, và lọc bỏ lô đang bị khóa bởi
-        // phiếu hàng bất thường PENDING khác - đối xứng với check ở create(), để người dùng
-        // không đếm nhầm một dòng rồi mới bị chặn lúc submit (quyết định #5, Bước 0).
         return storageLocationRepository.findStorageMapByWarehouseId(warehouseId).stream()
-                .filter(cell -> cell.getLotId() != null)
-                .filter(cell -> !abnormalStockDetailRepository
-                        .existsByLot_IdAndAbnormalStock_Status(cell.getLotId(), ApprovalStatusEnum.PENDING))
+                .filter(row -> row.getLotId() != null && row.getQuantity() != null && row.getQuantity() > 0)
                 .toList();
     }
 
@@ -75,17 +67,20 @@ public class StocktakeServiceImpl implements StocktakeService {
                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lô hàng id: " + input.getLotId()));
             ProductEntity product = lot.getProduct();
 
-            // Quyết định #5 (Bước 0, ngoài SRS): chặn nếu lô đang có phiếu hàng bất thường PENDING.
-            if (abnormalStockDetailRepository.existsByLot_IdAndAbnormalStock_Status(lot.getId(), ApprovalStatusEnum.PENDING)) {
-                throw new IllegalOperationException(
-                        "Lô " + lot.getLotCode() + " đang có phiếu hàng bất thường chờ duyệt, không thể tạo phiếu kiểm kê");
-            }
-
             InventoryEntity inventory = inventoryRepository
                     .findByWarehouseIdAndProductIdAndLotIdAndLocationId(
                             warehouse.getId(), product.getId(), input.getLotId(), input.getLocationId())
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Không tìm thấy tồn kho cho lô " + lot.getLotCode() + " tại vị trí đã chọn"));
+
+            int damagedQty = input.getDamagedQty() != null ? input.getDamagedQty() : 0;
+
+            if (input.getActualQty() + damagedQty > inventory.getQuantity()) {
+                throw new IllegalOperationException(
+                        "Tổng số lượng thực tế (" + input.getActualQty() + ") và hư hỏng (" + damagedQty
+                                + ") vượt quá tồn kho hệ thống (" + inventory.getQuantity()
+                                + ") cho lô " + lot.getLotCode());
+            }
 
             int diffQty = input.getActualQty() - inventory.getQuantity();
 
@@ -96,6 +91,8 @@ public class StocktakeServiceImpl implements StocktakeService {
                     .systemQty(inventory.getQuantity())
                     .actualQty(input.getActualQty())
                     .diffQty(diffQty)
+                    .damagedQty(damagedQty)
+                    .note(input.getNote())
                     .build());
         }
 
@@ -168,8 +165,15 @@ public class StocktakeServiceImpl implements StocktakeService {
 
     @Override
     @Transactional(readOnly = true)
-    public StocktakeResponse getById(Integer id) {
+    public StocktakeResponse getById(Integer id, User actor) {
         StocktakeEntity stocktake = findStocktakeOrThrow(id);
+        
+        boolean isOnlyStaff = actor.getAuthorities().stream()
+                .allMatch(a -> a.getAuthority().equals("ROLE_STAFF"));
+        if (isOnlyStaff && !stocktake.getCreatedBy().getEmail().equals(actor.getUsername())) {
+            throw new org.springframework.security.access.AccessDeniedException("Bạn không có quyền xem phiếu kiểm kê của người khác");
+        }
+        
         return StocktakeMapper.toResponse(stocktake, stocktakeDetailRepository.findByStocktakeId(id));
     }
 
@@ -241,7 +245,7 @@ public class StocktakeServiceImpl implements StocktakeService {
 
     private UserEntity findUserOrThrow(User actor) {
         return userRepository.findByEmail(actor.getUsername())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + actor.getUsername()));
+                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy thông tin người dùng. Phiên đăng nhập có thể đã hết hạn."));
     }
 
     protected StocktakeEntity findStocktakeOrThrow(Integer id) {

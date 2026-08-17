@@ -1,6 +1,6 @@
 package com.vertex.stockflow.entity;
 
-import com.vertex.stockflow.common.enums.ApprovalStatusEnum;
+import com.vertex.stockflow.common.enums.DocumentStatusEnum;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -8,9 +8,9 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(
-        name = "abnormal_stocks",
+        name = "transfers",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uk_abnormal_stocks_code", columnNames = "code")
+                @UniqueConstraint(name = "uk_transfers_code", columnNames = "code")
         }
 )
 @Getter
@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AbnormalStockEntity {
+public class TransferEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,31 +35,26 @@ public class AbnormalStockEntity {
     @JoinColumn(name = "created_by", nullable = false)
     private UserEntity createdBy;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "approved_by")
-    private UserEntity approvedBy;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
-    private ApprovalStatusEnum status = ApprovalStatusEnum.PENDING;
+    private DocumentStatusEnum status = DocumentStatusEnum.POSTED;
 
-    @Column(name = "reject_reason", length = 255)
-    private String rejectReason;
+    @Column(name = "void_reason", length = 255)
+    private String voidReason;
 
-    // Optimistic lock cấp phiếu: chống 2 người duyệt/từ chối cùng lúc trên 1 phiếu
-    // (không có trong SRS gốc, bổ sung theo cùng nguyên tắc BR-13 đang áp dụng cho InventoryEntity,
-    // và đồng bộ với version vừa thêm vào StocktakeEntity).
-    @Version
-    @Column(nullable = false)
-    @Builder.Default
-    private Integer version = 0;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "voided_by")
+    private UserEntity voidedBy;
+
+    @Column(name = "voided_at")
+    private LocalDateTime voidedAt;
+
+    @Column(length = 255)
+    private String note;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
-
-    @Column(name = "approved_at")
-    private LocalDateTime approvedAt;
 
     @PrePersist
     protected void onCreate() {

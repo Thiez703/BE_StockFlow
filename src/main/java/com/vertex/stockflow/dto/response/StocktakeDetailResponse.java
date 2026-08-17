@@ -19,4 +19,7 @@ public class StocktakeDetailResponse {
     private Integer systemQty;
     private Integer actualQty;
     private Integer diffQty;
+    private Integer damagedQty;
+    private Integer remainingQty;  // = actualQty - damagedQty, tính runtime
+    private String note;
 }

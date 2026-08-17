@@ -4,6 +4,7 @@ import com.vertex.stockflow.dto.request.LotCreateRequest;
 import com.vertex.stockflow.dto.request.LotUpdateRequest;
 import com.vertex.stockflow.dto.response.LotResponse;
 import com.vertex.stockflow.dto.response.SellThroughRiskResponse;
+import com.vertex.stockflow.repository.InboundDetailRepository;
 import com.vertex.stockflow.service.AlertService;
 import com.vertex.stockflow.service.LotService;
 import jakarta.validation.Valid;
@@ -13,7 +14,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/lots")
@@ -22,6 +25,7 @@ public class LotController {
 
     private final LotService lotService;
     private final AlertService alertService;
+    private final InboundDetailRepository inboundDetailRepository;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -55,5 +59,12 @@ public class LotController {
     @GetMapping("/{lotId}/sell-through-risk")
     public ResponseEntity<SellThroughRiskResponse> getSellThroughRisk(@PathVariable Integer lotId) {
         return ResponseEntity.ok(alertService.getLotSellThroughRisk(lotId));
+    }
+
+    @GetMapping("/{lotId}/latest-inbound-price")
+    public ResponseEntity<Map<String, BigDecimal>> getLatestInboundPrice(@PathVariable Integer lotId) {
+        List<BigDecimal> prices = inboundDetailRepository.findUnitPricesByLotIdOrderByLatest(lotId);
+        BigDecimal price = prices.isEmpty() ? null : prices.get(0);
+        return ResponseEntity.ok(Map.of("latestInboundPrice", price != null ? price : BigDecimal.ZERO));
     }
 }

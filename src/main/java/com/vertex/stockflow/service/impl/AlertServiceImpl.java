@@ -178,7 +178,7 @@ public class AlertServiceImpl implements AlertService {
     @Override
     public SellThroughRiskResponse getLotSellThroughRisk(Integer lotId) {
         LotEntity targetLot = lotRepository.findById(lotId)
-                .orElseThrow(() -> new RuntimeException("Lot not found: " + lotId));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin lô hàng. Có thể dữ liệu đã bị xóa."));
 
         Map<Integer, BigDecimal> velocityMap = buildVelocityMap();
         BigDecimal velocity = velocityMap.getOrDefault(targetLot.getProduct().getId(), BigDecimal.ZERO);

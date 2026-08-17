@@ -13,7 +13,5 @@ public interface StocktakeDetailRepository extends JpaRepository<StocktakeDetail
     // N+1 (thay vì gọi findByStocktakeId riêng cho từng phiếu trong vòng lặp).
     List<StocktakeDetailEntity> findByStocktake_IdIn(List<Integer> stocktakeIds);
 
-    // Hạ tầng cho quyết định #5 (chặn phiếu trùng lặp trên cùng lô, ngoài SRS):
-    // dùng để AbnormalStockService kiểm tra chéo trước khi tạo phiếu bất thường cho 1 lô.
     boolean existsByLot_IdAndStocktake_Status(Integer lotId, ApprovalStatusEnum status);
 }

@@ -1,59 +1,111 @@
 package com.vertex.stockflow.mapper;
 
 import com.vertex.stockflow.common.enums.LocationStatusEnum;
+import com.vertex.stockflow.dto.response.OccupantResponse;
 import com.vertex.stockflow.dto.response.StorageMapCellResponse;
+import com.vertex.stockflow.dto.response.StorageMapRawRow;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
-/** Static utility, theo đúng convention của LotMapper trong project. */
+/** Static utility: gom nhóm raw rows thành cells với occupants. */
 public final class StorageMapMapper {
 
-    /** Ngưỡng cảnh báo lô sắp hết hạn, tính bằng ngày. */
     private static final int NEAR_EXPIRY_DAYS = 30;
 
-    // Constructor private: chặn việc new class utility này ra.
     private StorageMapMapper() {
     }
 
     /**
-     * Tính daysToExpiry và status cho 1 ô, rồi set ngược vào chính ô đó.
-     * Nhận today từ ngoài truyền vào thay vì gọi LocalDate.now() bên trong
-     * để 36 ô dùng chung 1 mốc thời gian, và để sau này viết unit test được.
+     * Gom danh sách flat rows (1 row = 1 cặp location-inventory) thành
+     * danh sách cells (1 cell = 1 location + nhiều occupants).
      */
-    public static void enrich(StorageMapCellResponse cell, LocalDate today) {
+    public static List<StorageMapCellResponse> groupIntoCells(List<StorageMapRawRow> rawRows, LocalDate today) {
+        // LinkedHashMap giữ thứ tự chèn → vì query đã ORDER BY rowLabel, colIndex
+        Map<Integer, StorageMapCellResponse> cellMap = new LinkedHashMap<>();
 
-        // quantity == null nghĩa là LEFT JOIN không tìm được dòng inventory nào
-        // -> vị trí này đang rảnh. Thoát sớm, khỏi tính tiếp.
-        if (cell.getQuantity() == null || cell.getQuantity() <= 0) {
-            cell.setStatus(LocationStatusEnum.EMPTY);
-            return;
+        for (StorageMapRawRow row : rawRows) {
+            StorageMapCellResponse cell = cellMap.computeIfAbsent(row.getLocationId(), id -> {
+                StorageMapCellResponse c = new StorageMapCellResponse();
+                c.setLocationId(row.getLocationId());
+                c.setLocationCode(row.getLocationCode());
+                c.setRowLabel(row.getRowLabel());
+                c.setColIndex(row.getColIndex());
+                c.setCapacity(row.getCapacity());
+                c.setUsedQuantity(0);
+                c.setOccupants(new ArrayList<>());
+                return c;
+            });
+
+            // Nếu row có inventory (lotId != null và quantity > 0), tạo occupant
+            if (row.getLotId() != null && row.getQuantity() != null && row.getQuantity() > 0) {
+                OccupantResponse occ = new OccupantResponse();
+                occ.setLotId(row.getLotId());
+                occ.setLotCode(row.getLotCode());
+                occ.setExpDate(row.getExpDate());
+                occ.setProductId(row.getProductId());
+                occ.setProductCode(row.getProductCode());
+                occ.setProductName(row.getProductName());
+                occ.setUnit(row.getUnit());
+                occ.setQuantity(row.getQuantity());
+                occ.setMinStock(row.getMinStock());
+
+                enrichOccupantStatus(occ, today);
+
+                cell.getOccupants().add(occ);
+                cell.setUsedQuantity(cell.getUsedQuantity() + row.getQuantity());
+            }
         }
 
-        // Số ngày còn lại tới hạn. Âm = đã quá hạn.
-        // Phòng thủ null cho expDate dù entity khai báo bắt buộc,
-        // vì dữ liệu cũ có thể lọt qua trước khi thêm ràng buộc.
+        // Tính status tổng cho mỗi cell
+        for (StorageMapCellResponse cell : cellMap.values()) {
+            if (cell.getOccupants().isEmpty()) {
+                cell.setStatus(LocationStatusEnum.EMPTY);
+            } else {
+                cell.setStatus(worstStatus(cell.getOccupants()));
+            }
+        }
+
+        return new ArrayList<>(cellMap.values());
+    }
+
+    /**
+     * Tính status + daysToExpiry cho 1 occupant.
+     * Thứ tự ưu tiên: EXPIRED > NEAR_EXPIRY > BELOW_MIN > NORMAL.
+     */
+    private static void enrichOccupantStatus(OccupantResponse occ, LocalDate today) {
         Integer daysToExpiry = null;
-        if (cell.getExpDate() != null) {
-            daysToExpiry = (int) ChronoUnit.DAYS.between(today, cell.getExpDate());
-            cell.setDaysToExpiry(daysToExpiry);
+        if (occ.getExpDate() != null) {
+            daysToExpiry = (int) ChronoUnit.DAYS.between(today, occ.getExpDate());
+            occ.setDaysToExpiry(daysToExpiry);
         }
 
-        // Thứ tự if-else dưới đây CHÍNH LÀ độ ưu tiên màu đã chốt:
-        // EXPIRED > NEAR_EXPIRY > BELOW_MIN > NORMAL. Đảo thứ tự là sai nghiệp vụ.
         if (daysToExpiry != null && daysToExpiry < 0) {
-            cell.setStatus(LocationStatusEnum.EXPIRED);
-
+            occ.setStatus(LocationStatusEnum.EXPIRED);
         } else if (daysToExpiry != null && daysToExpiry <= NEAR_EXPIRY_DAYS) {
-            cell.setStatus(LocationStatusEnum.NEAR_EXPIRY);
-
-        } else if (cell.getMinStock() != null && cell.getQuantity() < cell.getMinStock()) {
-            // Dùng "<" chứ không "<=": tồn 600 / min 600 là VỪA ĐỦ, chưa phải dưới mức.
-            // minStock == null nghĩa là sản phẩm chưa đặt định mức -> không bao giờ cảnh báo.
-            cell.setStatus(LocationStatusEnum.BELOW_MIN);
-
+            occ.setStatus(LocationStatusEnum.NEAR_EXPIRY);
+        } else if (occ.getMinStock() != null && occ.getQuantity() < occ.getMinStock()) {
+            occ.setStatus(LocationStatusEnum.BELOW_MIN);
         } else {
-            cell.setStatus(LocationStatusEnum.NORMAL);
+            occ.setStatus(LocationStatusEnum.NORMAL);
         }
+    }
+
+    /** Trả về status "xấu nhất" trong danh sách occupant. */
+    private static LocationStatusEnum worstStatus(List<OccupantResponse> occupants) {
+        // Ưu tiên: EXPIRED > NEAR_EXPIRY > BELOW_MIN > NORMAL
+        LocationStatusEnum worst = LocationStatusEnum.NORMAL;
+        for (OccupantResponse occ : occupants) {
+            if (occ.getStatus() == LocationStatusEnum.EXPIRED) return LocationStatusEnum.EXPIRED;
+            if (occ.getStatus() == LocationStatusEnum.NEAR_EXPIRY) worst = LocationStatusEnum.NEAR_EXPIRY;
+            else if (occ.getStatus() == LocationStatusEnum.BELOW_MIN && worst != LocationStatusEnum.NEAR_EXPIRY) {
+                worst = LocationStatusEnum.BELOW_MIN;
+            }
+        }
+        return worst;
     }
 }

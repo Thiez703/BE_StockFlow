@@ -1,7 +1,6 @@
 package com.vertex.stockflow.dto.response;
 
 import com.vertex.stockflow.common.enums.DocumentStatusEnum;
-import com.vertex.stockflow.common.enums.IssueTypeEnum;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -10,17 +9,14 @@ import java.util.List;
 @Getter
 @Setter
 @Builder
-public class OutboundResponse {
+public class TransferResponse {
     private Integer id;
     private String code;
-    private IssueTypeEnum issueType;
-    private Integer customerId;
-    private String customerName;
     private Integer warehouseId;
-    private String createdByName;
     private DocumentStatusEnum status;
     private String voidReason;
     private String note;
+    private String createdByName;
     private LocalDateTime createdAt;
-    private List<OutboundDetailResponse> details;
+    private List<TransferDetailResponse> details;
 }

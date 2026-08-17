@@ -37,6 +37,7 @@ public class OutboundServiceImpl implements OutboundService {
 
     private final OutboundRepository outboundRepository;
     private final OutboundDetailRepository outboundDetailRepository;
+    private final InboundDetailRepository inboundDetailRepository;
     private final WarehouseRepository warehouseRepository;
     private final CustomerRepository customerRepository;
     private final LotRepository lotRepository;
@@ -98,6 +99,20 @@ public class OutboundServiceImpl implements OutboundService {
                     throw new IllegalOperationException(
                             "Lô " + lot.getLotCode() + " không phải lô FEFO gợi ý (" + suggested.getLotCode() +
                                     ") — bắt buộc nhập lý do khi chọn lô khác");
+                }
+            }
+
+            // Validate: đơn giá xuất >= đơn giá nhập gần nhất của lô
+            if (input.getUnitPrice() != null) {
+                List<BigDecimal> inboundPrices = inboundDetailRepository
+                        .findUnitPricesByLotIdOrderByLatest(lot.getId());
+                if (!inboundPrices.isEmpty()) {
+                    BigDecimal latestInboundPrice = inboundPrices.get(0);
+                    if (latestInboundPrice != null && input.getUnitPrice().compareTo(latestInboundPrice) < 0) {
+                        throw new IllegalOperationException(
+                                "Đơn giá xuất (" + input.getUnitPrice() + ") cho lô " + lot.getLotCode()
+                                        + " thấp hơn đơn giá nhập gần nhất (" + latestInboundPrice + ")");
+                    }
                 }
             }
 
@@ -198,6 +213,6 @@ public class OutboundServiceImpl implements OutboundService {
 
     private UserEntity findUserOrThrow(User actor) {
         return userRepository.findByEmail(actor.getUsername())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + actor.getUsername()));
+                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy thông tin người dùng. Phiên đăng nhập có thể đã hết hạn."));
     }
 }

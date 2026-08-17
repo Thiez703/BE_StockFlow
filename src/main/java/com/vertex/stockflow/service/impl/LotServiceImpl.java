@@ -31,7 +31,7 @@ public class LotServiceImpl implements LotService {
     @Transactional
     public LotResponse create(LotCreateRequest request) {
         ProductEntity product = productRepository.findById(request.getProductId())
-                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + request.getProductId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin sản phẩm. Có thể sản phẩm này đã bị xóa."));
         
         String lotCode = request.getLotCode();
         if (lotCode == null || lotCode.trim().isEmpty()) {
@@ -39,7 +39,7 @@ public class LotServiceImpl implements LotService {
         }
 
         if (lotRepository.existsByProductIdAndLotCode(request.getProductId(), lotCode)) {
-            throw new DuplicateResourceException("Lot code already exists for product id: " + request.getProductId());
+            throw new DuplicateResourceException("Mã lô hàng này đã tồn tại cho sản phẩm bạn chọn.");
         }
         LotEntity lot = LotEntity.builder()
                 .product(product)
@@ -56,7 +56,7 @@ public class LotServiceImpl implements LotService {
     @Transactional
     public LotResponse update(Integer id, LotUpdateRequest request) {
         LotEntity lotEntity = lotRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Lot not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin lô hàng. Có thể dữ liệu đã bị xóa."));
 
         lotEntity.setMfgDate(request.getMfgDate());
         lotEntity.setExpDate(request.getExpDate());
@@ -68,7 +68,7 @@ public class LotServiceImpl implements LotService {
     @Transactional(readOnly = true)
     public LotResponse getById(Integer id) {
         LotEntity lotEntity = lotRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Lot not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin lô hàng. Có thể dữ liệu đã bị xóa."));
         return LotMapper.toResponse(lotEntity);
     }
 
@@ -92,7 +92,7 @@ public class LotServiceImpl implements LotService {
     @Transactional
     public void delete(Integer id) {
         LotEntity lotEntity = lotRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Lot not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin lô hàng. Có thể dữ liệu đã bị xóa."));
         lotRepository.delete(lotEntity);
     }
 

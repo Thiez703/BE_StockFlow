@@ -46,6 +46,27 @@ public class InventoryServiceImpl implements InventoryService {
             StorageLocationEntity location = storageLocationRepository.findById(locationId)
                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vị trí lưu trữ (ID: " + locationId + "). Vui lòng chọn một vị trí hợp lệ."));
 
+            // Dọn dẹp dòng inventory rác (quantity = 0) còn giữ location
+            for (InventoryEntity existing : inventoryRepository.findAllByLocationId(locationId)) {
+                if (existing.getQuantity() == 0
+                        && (!existing.getProduct().getId().equals(productId) || !existing.getLot().getId().equals(lotId))) {
+                    existing.setLocation(null);
+                    inventoryRepository.saveAndFlush(existing);
+                }
+            }
+
+            // Kiểm tra sức chứa vị trí (nếu có cấu hình capacity)
+            if (location.getCapacity() != null && quantityDelta > 0) {
+                int used = inventoryRepository.sumQuantityByLocationId(locationId);
+                int afterAdd = used + quantityDelta;
+                if (afterAdd > location.getCapacity()) {
+                    throw new IllegalOperationException(
+                            "Vị trí " + location.getLocationCode() + " vượt sức chứa (capacity: "
+                                    + location.getCapacity() + ", hiện có: " + used
+                                    + ", đang thêm: " + quantityDelta + ")");
+                }
+            }
+
             InventoryEntity inventory = inventoryRepository
                     .findByWarehouseIdAndProductIdAndLotIdAndLocationId(warehouseId, productId, lotId, locationId)
                     .orElseGet(() -> InventoryEntity.builder()

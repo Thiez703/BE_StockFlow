@@ -40,4 +40,11 @@ public class StocktakeDetailEntity {
 
     @Column(name = "diff_qty", nullable = false)
     private Integer diffQty;
+
+    @Column(name = "damaged_qty", nullable = false)
+    @Builder.Default
+    private Integer damagedQty = 0;
+
+    @Column(name = "note", length = 500)
+    private String note;
 }

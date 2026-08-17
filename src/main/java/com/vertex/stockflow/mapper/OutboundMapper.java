@@ -36,6 +36,7 @@ public final class OutboundMapper {
                 .customerId(outbound.getCustomer() != null ? outbound.getCustomer().getId() : null)
                 .customerName(outbound.getCustomer() != null ? outbound.getCustomer().getName() : null)
                 .warehouseId(outbound.getWarehouse().getId())
+                .createdByName(outbound.getCreatedBy() != null ? outbound.getCreatedBy().getFullName() : null)
                 .status(outbound.getStatus())
                 .voidReason(outbound.getVoidReason())
                 .note(outbound.getNote())

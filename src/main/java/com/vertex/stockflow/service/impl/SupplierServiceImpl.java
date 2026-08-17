@@ -27,13 +27,13 @@ public class SupplierServiceImpl implements SupplierService {
     @Transactional
     public SupplierResponse create(SupplierRequest request) {
         if (supplierRepository.existsByCode(request.getCode())) {
-            throw new DuplicateResourceException("Supplier code already exists: " + request.getCode());
+            throw new DuplicateResourceException("Mã nhà cung cấp " + request.getCode() + " đã tồn tại.");
         }
         if (StringUtils.hasText(request.getPhone()) && supplierRepository.existsByPhone(request.getPhone())) {
-            throw new DuplicateResourceException("Supplier phone already exists: " + request.getPhone());
+            throw new DuplicateResourceException("Số điện thoại " + request.getPhone() + " đã được sử dụng cho một nhà cung cấp khác.");
         }
         if (StringUtils.hasText(request.getTaxCode()) && supplierRepository.existsByTaxCode(request.getTaxCode())) {
-            throw new DuplicateResourceException("Supplier taxCode already exists: " + request.getTaxCode());
+            throw new DuplicateResourceException("Mã số thuế " + request.getTaxCode() + " đã được sử dụng cho một nhà cung cấp khác.");
         }
 
         SupplierEntity entity = SupplierEntity.builder()
@@ -53,13 +53,13 @@ public class SupplierServiceImpl implements SupplierService {
     @Transactional
     public SupplierResponse update(Integer id, SupplierRequest request) {
         SupplierEntity entity = supplierRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin nhà cung cấp. Có thể dữ liệu đã bị xóa."));
 
         if (StringUtils.hasText(request.getPhone()) && supplierRepository.existsByPhoneAndIdNot(request.getPhone(), id)) {
-            throw new DuplicateResourceException("Supplier phone already exists: " + request.getPhone());
+            throw new DuplicateResourceException("Số điện thoại " + request.getPhone() + " đã được sử dụng cho một nhà cung cấp khác.");
         }
         if (StringUtils.hasText(request.getTaxCode()) && supplierRepository.existsByTaxCodeAndIdNot(request.getTaxCode(), id)) {
-            throw new DuplicateResourceException("Supplier taxCode already exists: " + request.getTaxCode());
+            throw new DuplicateResourceException("Mã số thuế " + request.getTaxCode() + " đã được sử dụng cho một nhà cung cấp khác.");
         }
 
         entity.setName(request.getName());
@@ -76,7 +76,7 @@ public class SupplierServiceImpl implements SupplierService {
     @Transactional(readOnly = true)
     public SupplierResponse getById(Integer id) {
         SupplierEntity entity = supplierRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin nhà cung cấp. Có thể dữ liệu đã bị xóa."));
         return supplierMapper.toResponse(entity);
     }
 
@@ -92,7 +92,7 @@ public class SupplierServiceImpl implements SupplierService {
     @Transactional
     public void delete(Integer id) {
         SupplierEntity entity = supplierRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin nhà cung cấp. Có thể dữ liệu đã bị xóa."));
         supplierRepository.delete(entity);
     }
 
@@ -100,7 +100,7 @@ public class SupplierServiceImpl implements SupplierService {
     @Transactional
     public SupplierResponse deactivate(Integer id) {
         SupplierEntity entity = supplierRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin nhà cung cấp. Có thể dữ liệu đã bị xóa."));
         entity.setStatus(StatusEnum.INACTIVE);
         return supplierMapper.toResponse(entity);
     }
@@ -109,7 +109,7 @@ public class SupplierServiceImpl implements SupplierService {
     @Transactional
     public SupplierResponse activate(Integer id) {
         SupplierEntity entity = supplierRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin nhà cung cấp. Có thể dữ liệu đã bị xóa."));
         entity.setStatus(StatusEnum.ACTIVE);
         return supplierMapper.toResponse(entity);
     }

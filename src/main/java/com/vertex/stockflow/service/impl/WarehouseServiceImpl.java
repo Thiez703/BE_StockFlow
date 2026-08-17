@@ -28,7 +28,7 @@ public class WarehouseServiceImpl implements WarehouseService {
     @Override
     public WarehouseResponse create(WarehouseCreateRequest request) {
         if (warehouseRepository.existsByCode(request.getCode())) {
-            throw new DuplicateResourceException("Warehouse code '" + request.getCode() + "' already exists");
+            throw new DuplicateResourceException("Mã kho hàng '" + request.getCode() + "' đã tồn tại trong hệ thống.");
         }
 
         WarehouseEntity warehouse = WarehouseEntity.builder()
@@ -75,7 +75,7 @@ public class WarehouseServiceImpl implements WarehouseService {
 
     private WarehouseEntity findEntityOrThrow(Integer id) {
         return warehouseRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin kho hàng. Có thể dữ liệu đã bị xóa."));
     }
 
     private WarehouseResponse toResponse(WarehouseEntity entity) {

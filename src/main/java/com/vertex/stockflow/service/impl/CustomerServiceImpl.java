@@ -26,7 +26,7 @@ public class CustomerServiceImpl implements CustomerService {
     @Transactional
     public CustomerResponse create(CustomerRequest request) {
         if (customerRepository.existsByPhone(request.getPhone())) {
-            throw new DuplicateResourceException("Customer phone already exists: " + request.getPhone());
+            throw new DuplicateResourceException("Số điện thoại " + request.getPhone() + " đã được sử dụng cho một khách hàng khác.");
         }
 
         CustomerEntity entity = CustomerEntity.builder()
@@ -41,10 +41,10 @@ public class CustomerServiceImpl implements CustomerService {
     @Transactional
     public CustomerResponse update(Integer id, CustomerRequest request) {
         CustomerEntity entity = customerRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin khách hàng. Có thể dữ liệu đã bị xóa."));
 
         if (customerRepository.existsByPhoneAndIdNot(request.getPhone(), id)) {
-            throw new DuplicateResourceException("Customer phone already exists: " + request.getPhone());
+            throw new DuplicateResourceException("Số điện thoại " + request.getPhone() + " đã được sử dụng cho một khách hàng khác.");
         }
 
         entity.setName(request.getName());
@@ -57,7 +57,7 @@ public class CustomerServiceImpl implements CustomerService {
     @Transactional(readOnly = true)
     public CustomerResponse getById(Integer id) {
         CustomerEntity entity = customerRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin khách hàng. Có thể dữ liệu đã bị xóa."));
         return customerMapper.toResponse(entity);
     }
 
@@ -73,7 +73,7 @@ public class CustomerServiceImpl implements CustomerService {
     @Transactional
     public void delete(Integer id) {
         CustomerEntity entity = customerRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin khách hàng. Có thể dữ liệu đã bị xóa."));
         customerRepository.delete(entity);
     }
 
@@ -81,7 +81,7 @@ public class CustomerServiceImpl implements CustomerService {
     @Transactional
     public CustomerResponse deactivate(Integer id) {
         CustomerEntity entity = customerRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin khách hàng. Có thể dữ liệu đã bị xóa."));
         entity.setStatus(StatusEnum.INACTIVE);
         return customerMapper.toResponse(entity);
     }
@@ -90,7 +90,7 @@ public class CustomerServiceImpl implements CustomerService {
     @Transactional
     public CustomerResponse activate(Integer id) {
         CustomerEntity entity = customerRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin khách hàng. Có thể dữ liệu đã bị xóa."));
         entity.setStatus(StatusEnum.ACTIVE);
         return customerMapper.toResponse(entity);
     }
