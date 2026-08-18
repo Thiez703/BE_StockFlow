@@ -17,7 +17,6 @@ public class StocktakeDetailInput {
     @NotNull
     private Integer locationId;
 
-    @NotNull
     private Integer actualQty;
 
     @Min(0)

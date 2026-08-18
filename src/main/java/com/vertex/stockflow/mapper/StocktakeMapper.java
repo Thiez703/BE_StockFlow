@@ -27,7 +27,7 @@ public final class StocktakeMapper {
                 .actualQty(entity.getActualQty())
                 .diffQty(entity.getDiffQty())
                 .damagedQty(entity.getDamagedQty())
-                .remainingQty(entity.getActualQty() - entity.getDamagedQty())
+                .remainingQty(entity.getActualQty() != null ? entity.getActualQty() - entity.getDamagedQty() : null)
                 .note(entity.getNote())
                 .build();
     }

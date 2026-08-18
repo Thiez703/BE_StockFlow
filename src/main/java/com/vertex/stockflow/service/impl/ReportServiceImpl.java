@@ -94,14 +94,19 @@ public class ReportServiceImpl implements ReportService {
                 .locationId(toInt(row[10]))
                 .locationCode((String) row[11])
                 .systemQty(toInt(row[12]))
-                .actualQty(toInt(row[13]))
-                .diffQty(toInt(row[14]))
+                .actualQty(toIntegerOrNull(row[13]))
+                .diffQty(toIntegerOrNull(row[14]))
                 .note((String) row[15])
                 .build();
     }
 
     private int toInt(Object val) {
         if (val == null) return 0;
+        return ((Number) val).intValue();
+    }
+
+    private Integer toIntegerOrNull(Object val) {
+        if (val == null) return null;
         return ((Number) val).intValue();
     }
 

@@ -6,7 +6,7 @@ import lombok.*;
 import java.time.Instant;
 
 @Entity
-@Table(name = "refresh_tokens_v2")
+@Table(name = "refresh_tokens")
 @Getter
 @Setter
 @NoArgsConstructor

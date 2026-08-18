@@ -49,11 +49,17 @@ public class InboundController {
             @RequestParam(required = false) Integer warehouseId,
             @RequestParam(required = false) Integer supplierId,
             @RequestParam(required = false) DocumentStatusEnum status,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to,
             Pageable pageable) {
-        LocalDateTime fromDt = from != null ? from.atStartOfDay() : null;
-        LocalDateTime toDt = to != null ? to.atTime(LocalTime.MAX) : null;
+        LocalDateTime fromDt = null;
+        if (from != null && from.length() >= 10) {
+            fromDt = LocalDate.parse(from.substring(0, 10)).atStartOfDay();
+        }
+        LocalDateTime toDt = null;
+        if (to != null && to.length() >= 10) {
+            toDt = LocalDate.parse(to.substring(0, 10)).atTime(LocalTime.MAX);
+        }
         return ResponseEntity.ok(inboundService.search(warehouseId, supplierId, status, fromDt, toDt, pageable));
     }
 

@@ -28,12 +28,18 @@ public class InventoryTransactionController {
             @RequestParam(required = false) Integer productId,
             @RequestParam(required = false) Integer lotId,
             @RequestParam(required = false) Integer locationId,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to,
             @RequestParam(required = false) RefTypeEnum refType,
             Pageable pageable) {
-        LocalDateTime fromDt = from != null ? from.atStartOfDay() : null;
-        LocalDateTime toDt = to != null ? to.atTime(LocalTime.MAX) : null;
+        LocalDateTime fromDt = null;
+        if (from != null && from.length() >= 10) {
+            fromDt = LocalDate.parse(from.substring(0, 10)).atStartOfDay();
+        }
+        LocalDateTime toDt = null;
+        if (to != null && to.length() >= 10) {
+            toDt = LocalDate.parse(to.substring(0, 10)).atTime(LocalTime.MAX);
+        }
         return ResponseEntity.ok(inventoryTransactionService.search(productId, lotId, locationId, fromDt, toDt, refType, pageable));
     }
 

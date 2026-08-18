@@ -35,10 +35,10 @@ public class StocktakeDetailEntity {
     @Column(name = "system_qty", nullable = false)
     private Integer systemQty;
 
-    @Column(name = "actual_qty", nullable = false)
+    @Column(name = "actual_qty")
     private Integer actualQty;
 
-    @Column(name = "diff_qty", nullable = false)
+    @Column(name = "diff_qty")
     private Integer diffQty;
 
     @Column(name = "damaged_qty", nullable = false)

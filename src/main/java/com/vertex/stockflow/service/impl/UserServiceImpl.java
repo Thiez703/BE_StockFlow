@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class UserServiceImpl implements UserService {
     // Lombok sinh 1 constructor duy nhất nhận đủ 6 field final này -> Spring dùng nó để inject bean (constructor injection)
     private final UserRepository userRepository;
@@ -55,7 +56,12 @@ public class UserServiceImpl implements UserService {
                 .build();
         userRepository.save(user);
 
-        mailService.sendGeneratedPassword(user.getEmail(), user.getFullName(), rawPassword);
+        try {
+            mailService.sendGeneratedPassword(user.getEmail(), user.getFullName(), rawPassword);
+        } catch (Exception e) {
+            log.error("Failed to send generated password to {}: {}", user.getEmail(), e.getMessage());
+            log.warn("Generated password for {} is: {}", user.getEmail(), rawPassword);
+        }
         auditLogService.log(actor, AuditAction.CREATE_USER, "users", user.getId(),
                 "Tạo tài khoản " + user.getEmail());
         return userMapper.toResponse(user);
@@ -115,7 +121,12 @@ public class UserServiceImpl implements UserService {
         user.setMustChangePassword(true);
         userRepository.save(user);
 
-        mailService.sendGeneratedPassword(user.getEmail(), user.getFullName(), rawPassword);
+        try {
+            mailService.sendGeneratedPassword(user.getEmail(), user.getFullName(), rawPassword);
+        } catch (Exception e) {
+            log.error("Failed to send generated password to {}: {}", user.getEmail(), e.getMessage());
+            log.warn("Generated password for {} is: {}", user.getEmail(), rawPassword);
+        }
         auditLogService.log(actor, AuditAction.RESET_PASSWORD, "users", id,
                 "Đặt lại mật khẩu cho " + user.getEmail());
     }

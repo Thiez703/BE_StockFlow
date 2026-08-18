@@ -74,15 +74,17 @@ public class StocktakeServiceImpl implements StocktakeService {
                             "Không tìm thấy tồn kho cho lô " + lot.getLotCode() + " tại vị trí đã chọn"));
 
             int damagedQty = input.getDamagedQty() != null ? input.getDamagedQty() : 0;
+            Integer diffQty = null;
 
-            if (input.getActualQty() + damagedQty > inventory.getQuantity()) {
-                throw new IllegalOperationException(
-                        "Tổng số lượng thực tế (" + input.getActualQty() + ") và hư hỏng (" + damagedQty
-                                + ") vượt quá tồn kho hệ thống (" + inventory.getQuantity()
-                                + ") cho lô " + lot.getLotCode());
+            if (input.getActualQty() != null) {
+                if (input.getActualQty() + damagedQty > inventory.getQuantity()) {
+                    throw new IllegalOperationException(
+                            "Tổng số lượng thực tế (" + input.getActualQty() + ") và hư hỏng (" + damagedQty
+                                    + ") vượt quá tồn kho hệ thống (" + inventory.getQuantity()
+                                    + ") cho lô " + lot.getLotCode());
+                }
+                diffQty = input.getActualQty() - inventory.getQuantity();
             }
-
-            int diffQty = input.getActualQty() - inventory.getQuantity();
 
             details.add(StocktakeDetailEntity.builder()
                     .product(product)
@@ -119,7 +121,7 @@ public class StocktakeServiceImpl implements StocktakeService {
         for (StocktakeDetailEntity detail : details) {
             detail.setStocktake(stocktake);
             
-            if (isAdmin && detail.getDiffQty() != 0) {
+            if (isAdmin && detail.getDiffQty() != null && detail.getDiffQty() != 0) {
                 inventoryService.updateInventory(
                         warehouse.getId(),
                         detail.getProduct().getId(),
@@ -190,7 +192,7 @@ public class StocktakeServiceImpl implements StocktakeService {
 
         List<StocktakeDetailEntity> details = stocktakeDetailRepository.findByStocktakeId(id);
         for (StocktakeDetailEntity detail : details) {
-            if (detail.getDiffQty() != 0) {
+            if (detail.getDiffQty() != null && detail.getDiffQty() != 0) {
                 inventoryService.updateInventory(
                         stocktake.getWarehouse().getId(),
                         detail.getProduct().getId(),
