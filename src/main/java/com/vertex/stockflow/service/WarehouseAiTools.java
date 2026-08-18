@@ -1,6 +1,7 @@
 package com.vertex.stockflow.service;
 
 import com.vertex.stockflow.common.enums.StatusEnum;
+import com.vertex.stockflow.common.enums.RoleEnum;
 import com.vertex.stockflow.entity.*;
 import com.vertex.stockflow.repository.*;
 import dev.langchain4j.agent.tool.Tool;
@@ -33,6 +34,7 @@ public class WarehouseAiTools {
     private final TransferRepository transferRepository;
     private final ReportRepository reportRepository;
     private final InventoryTransactionRepository inventoryTransactionRepository;
+    private final UserRepository userRepository;
 
     // ==================== ĐẾM SỐ LƯỢNG ====================
 
@@ -290,6 +292,22 @@ public class WarehouseAiTools {
         return "Tổng cộng " + locations.size() + " vị trí trong kho '" + whName + "':\n" + data;
     }
 
+    @Tool("Lấy danh sách vị trí kho vừa mới được cập nhật (thay đổi) gần đây nhất trên toàn hệ thống")
+    public String listRecentlyUpdatedLocations() {
+        Page<StorageLocationEntity> page = storageLocationRepository.findAll(
+                PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "updatedAt")));
+        List<StorageLocationEntity> locations = page.getContent();
+        if (locations.isEmpty()) return "Chưa có vị trí kho nào.";
+        String data = locations.stream()
+                .map(sl -> String.format("- Mã vị trí: %s | Kho: %s | Cập nhật lúc: %s",
+                        sl.getLocationCode(),
+                        sl.getWarehouse() != null ? sl.getWarehouse().getName() : "N/A",
+                        sl.getUpdatedAt() != null ? sl.getUpdatedAt() : "N/A"))
+                .collect(Collectors.joining("\n"));
+        return "Top 10 vị trí kho vừa được thay đổi gần nhất:\n" + data;
+    }
+
+
     // ==================== PHIẾU NHẬP KHO ====================
 
     @Tool("Lấy danh sách phiếu nhập kho (inbound) gần nhất, tối đa 20 phiếu, gồm mã phiếu, nhà cung cấp, kho, trạng thái, ngày tạo")
@@ -434,4 +452,319 @@ public class WarehouseAiTools {
                 transferRepository.count()
         );
     }
+
+    // ==================== TÌM KIẾM CHI TIẾT (TOOLS MỚI) ====================
+
+    @Tool("Tìm kiếm sản phẩm theo tên hoặc mã sản phẩm (từ khoá không phân biệt hoa thường). Dùng khi khách hàng hỏi tìm 1 mặt hàng cụ thể.")
+    public String searchProducts(String keyword) {
+        String lowerKw = keyword.toLowerCase();
+        List<ProductEntity> products = productRepository.findAll().stream()
+                .filter(p -> p.getName().toLowerCase().contains(lowerKw) || p.getCode().toLowerCase().contains(lowerKw))
+                .limit(20)
+                .toList();
+        if (products.isEmpty()) return "Không tìm thấy sản phẩm nào khớp với từ khoá: " + keyword;
+        String data = products.stream()
+                .map(p -> String.format("- Mã: %s | Tên: %s | ĐVT: %s | Tồn tối thiểu: %s | Trạng thái: %s",
+                        p.getCode(), p.getName(), p.getUnit(), p.getMinStock(), p.getStatus()))
+                .collect(Collectors.joining("\n"));
+        return "Tìm thấy " + products.size() + " sản phẩm:\n" + data;
+    }
+
+    @Tool("Tìm kiếm và xem chi tiết một phiếu nhập kho cụ thể dựa vào mã phiếu (ví dụ: IN-0001)")
+    public String findInboundByCode(String code) {
+        InboundEntity inbound = inboundRepository.findAll().stream()
+                .filter(i -> i.getCode().equalsIgnoreCase(code))
+                .findFirst().orElse(null);
+        if (inbound == null) return "Không tìm thấy phiếu nhập kho có mã: " + code;
+        return String.format("Phiếu Nhập %s:\n- Kho: %s\n- Nhà cung cấp: %s\n- Trạng thái: %s\n- Ngày tạo: %s\n- Ghi chú: %s",
+                inbound.getCode(), inbound.getWarehouse().getName(), inbound.getSupplier().getName(),
+                inbound.getStatus(), inbound.getCreatedAt(), inbound.getNote());
+    }
+
+    @Tool("Tìm kiếm và xem chi tiết một phiếu xuất kho cụ thể dựa vào mã phiếu (ví dụ: OUT-0001)")
+    public String findOutboundByCode(String code) {
+        OutboundEntity outbound = outboundRepository.findAll().stream()
+                .filter(o -> o.getCode().equalsIgnoreCase(code))
+                .findFirst().orElse(null);
+        if (outbound == null) return "Không tìm thấy phiếu xuất kho có mã: " + code;
+        return String.format("Phiếu Xuất %s:\n- Loại xuất: %s\n- Kho: %s\n- Khách hàng: %s\n- Trạng thái: %s\n- Ngày tạo: %s\n- Ghi chú: %s",
+                outbound.getCode(), outbound.getIssueType(), outbound.getWarehouse().getName(),
+                outbound.getCustomer() != null ? outbound.getCustomer().getName() : "Không có",
+                outbound.getStatus(), outbound.getCreatedAt(), outbound.getNote());
+    }
+
+    @Tool("CẢNH BÁO: Lấy danh sách các sản phẩm đang có số lượng tồn kho thực tế thấp hơn mức tồn kho tối thiểu (cần nhập thêm hàng).")
+    public String getLowStockProducts() {
+        List<Object[]> stockData = inventoryRepository.sumStockByProduct();
+        StringBuilder sb = new StringBuilder();
+        int count = 0;
+        for (Object[] row : stockData) {
+            Integer productId = (Integer) row[0];
+            Number totalQty = (Number) row[1];
+            ProductEntity p = productRepository.findById(productId).orElse(null);
+            if (p != null && p.getMinStock() != null && totalQty.intValue() < p.getMinStock()) {
+                sb.append(String.format("- SP: %s (Mã: %s) | Tồn kho hiện tại: %s | Tối thiểu yêu cầu: %d\n",
+                        p.getName(), p.getCode(), totalQty, p.getMinStock()));
+                count++;
+            }
+        }
+        if (count == 0) return "Tất cả các sản phẩm đều đang có tồn kho an toàn (không có sản phẩm nào dưới mức tối thiểu).";
+        return "CẢNH BÁO - Có " + count + " sản phẩm dưới mức tồn kho tối thiểu:\n" + sb.toString();
+    }
+
+    @Tool("Tìm kiếm khách hàng theo tên hoặc số điện thoại (từ khoá).")
+    public String searchCustomers(String keyword) {
+        String lowerKw = keyword.toLowerCase();
+        List<CustomerEntity> list = customerRepository.findAll().stream()
+                .filter(c -> c.getName().toLowerCase().contains(lowerKw) || 
+                             (c.getPhone() != null && c.getPhone().contains(keyword)))
+                .limit(10)
+                .toList();
+        if (list.isEmpty()) return "Không tìm thấy khách hàng nào khớp với: " + keyword;
+        String data = list.stream()
+                .map(c -> String.format("- Khách hàng: %s | SĐT: %s | Địa chỉ: %s", 
+                        c.getName(), c.getPhone(), c.getAddress()))
+                .collect(Collectors.joining("\n"));
+        return "Tìm thấy " + list.size() + " khách hàng:\n" + data;
+    }
+
+    @Tool("Tìm kiếm nhà cung cấp (supplier) theo tên, số điện thoại hoặc email (từ khoá).")
+    public String searchSuppliers(String keyword) {
+        String lowerKw = keyword.toLowerCase();
+        List<SupplierEntity> list = supplierRepository.findAll().stream()
+                .filter(s -> s.getName().toLowerCase().contains(lowerKw) || 
+                             (s.getPhone() != null && s.getPhone().contains(keyword)) ||
+                             (s.getEmail() != null && s.getEmail().toLowerCase().contains(lowerKw)))
+                .limit(10)
+                .toList();
+        if (list.isEmpty()) return "Không tìm thấy nhà cung cấp nào khớp với: " + keyword;
+        String data = list.stream()
+                .map(s -> String.format("- NCC: %s | Người liên hệ: %s | SĐT: %s | Email: %s", 
+                        s.getName(), s.getContactPerson(), s.getPhone(), s.getEmail()))
+                .collect(Collectors.joining("\n"));
+        return "Tìm thấy " + list.size() + " nhà cung cấp:\n" + data;
+    }
+
+    @Tool("Đếm số lượng phiếu xuất kho (outbound) theo trạng thái cụ thể (như: PENDING, COMPLETED, CANCELLED, v.v.). Thường dùng để xem có bao nhiêu đơn đang chờ xuất.")
+    public String countOutboundsByStatus(String status) {
+        long count = outboundRepository.findAll().stream()
+                .filter(o -> o.getStatus() != null && o.getStatus().name().equalsIgnoreCase(status))
+                .count();
+        return "Có tổng cộng " + count + " phiếu xuất kho đang ở trạng thái: " + status.toUpperCase();
+    }
+
+    @Tool("Đếm số lượng phiếu nhập kho (inbound) theo trạng thái cụ thể (như: PENDING, COMPLETED, CANCELLED, v.v.). Thường dùng để xem có bao nhiêu đơn đang chờ nhập.")
+    public String countInboundsByStatus(String status) {
+        long count = inboundRepository.findAll().stream()
+                .filter(i -> i.getStatus() != null && i.getStatus().name().equalsIgnoreCase(status))
+                .count();
+        return "Có tổng cộng " + count + " phiếu nhập kho đang ở trạng thái: " + status.toUpperCase();
+    }
+
+    // ==================== BỘ 20 TOOLS BỔ SUNG (NÂNG CAO) ====================
+
+    @Tool("Lấy danh sách các sản phẩm đang hết sạch hàng trong kho (tồn kho = 0).")
+    public String getOutOfStockProducts() {
+        List<Object[]> stockData = inventoryRepository.sumStockByProduct();
+        List<Integer> productsWithStock = stockData.stream().map(row -> (Integer) row[0]).toList();
+        List<ProductEntity> allProducts = productRepository.findAll();
+        List<ProductEntity> outOfStock = allProducts.stream()
+                .filter(p -> !productsWithStock.contains(p.getId()))
+                .limit(20)
+                .toList();
+        if (outOfStock.isEmpty()) return "Tuyệt vời, không có sản phẩm nào bị hết hàng.";
+        return "Các sản phẩm đang hết hàng (tồn kho = 0):\n" + outOfStock.stream()
+                .map(p -> "- " + p.getName() + " (Mã: " + p.getCode() + ")").collect(Collectors.joining("\n"));
+    }
+
+    @Tool("Lấy danh sách các lô hàng (lot) ĐÃ HẾT HẠN sử dụng tính đến ngày hôm nay.")
+    public String getExpiredLots() {
+        List<LotEntity> lots = lotRepository.findByStatusAndExpDateBefore(StatusEnum.ACTIVE, LocalDate.now());
+        if (lots.isEmpty()) return "Không có lô hàng nào đã hết hạn.";
+        return "Danh sách lô ĐÃ HẾT HẠN:\n" + lots.stream()
+                .map(l -> "- Lô: " + l.getLotCode() + " | SP: " + l.getProduct().getName() + " | HSD: " + l.getExpDate())
+                .collect(Collectors.joining("\n"));
+    }
+
+    @Tool("Lấy danh sách các phiếu nhập kho đang ở trạng thái PENDING (chờ duyệt).")
+    public String getPendingInbounds() {
+        List<InboundEntity> list = inboundRepository.findAll().stream()
+                .filter(i -> i.getStatus() != null && i.getStatus().name().equalsIgnoreCase("PENDING"))
+                .limit(20).toList();
+        if (list.isEmpty()) return "Không có phiếu nhập kho nào đang chờ duyệt.";
+        return "Phiếu nhập PENDING:\n" + list.stream().map(i -> "- " + i.getCode() + " (NCC: " + i.getSupplier().getName() + ")").collect(Collectors.joining("\n"));
+    }
+
+    @Tool("Lấy danh sách các phiếu xuất kho đang ở trạng thái PENDING (chờ duyệt).")
+    public String getPendingOutbounds() {
+        List<OutboundEntity> list = outboundRepository.findAll().stream()
+                .filter(o -> o.getStatus() != null && o.getStatus().name().equalsIgnoreCase("PENDING"))
+                .limit(20).toList();
+        if (list.isEmpty()) return "Không có phiếu xuất kho nào đang chờ duyệt.";
+        return "Phiếu xuất PENDING:\n" + list.stream().map(o -> "- " + o.getCode() + " (KH: " + (o.getCustomer() != null ? o.getCustomer().getName() : "N/A") + ")").collect(Collectors.joining("\n"));
+    }
+
+    @Tool("Tìm kiếm danh mục sản phẩm (category) theo tên.")
+    public String searchCategories(String keyword) {
+        String kw = keyword.toLowerCase();
+        List<CategoryEntity> list = categoryRepository.findAll().stream()
+                .filter(c -> c.getName().toLowerCase().contains(kw)).limit(10).toList();
+        if (list.isEmpty()) return "Không tìm thấy danh mục: " + keyword;
+        return "Danh mục tìm thấy:\n" + list.stream().map(c -> "- " + c.getName()).collect(Collectors.joining("\n"));
+    }
+
+    @Tool("Tìm kiếm Lô hàng (Lot) theo mã lô.")
+    public String searchLots(String keyword) {
+        String kw = keyword.toLowerCase();
+        List<LotEntity> list = lotRepository.findAll().stream()
+                .filter(l -> l.getLotCode().toLowerCase().contains(kw)).limit(10).toList();
+        if (list.isEmpty()) return "Không tìm thấy mã lô: " + keyword;
+        return "Lô tìm thấy:\n" + list.stream().map(l -> "- " + l.getLotCode() + " | SP: " + l.getProduct().getName()).collect(Collectors.joining("\n"));
+    }
+
+    @Tool("Lấy tổng số lượng tất cả các sản phẩm đang có trong kho (tính tổng số cái/hộp/...).")
+    public String countTotalInventoryQuantity() {
+        List<Object[]> stockData = inventoryRepository.sumStockByProduct();
+        long total = 0;
+        for (Object[] row : stockData) {
+            Number qty = (Number) row[1];
+            total += qty.longValue();
+        }
+        return "Tổng số lượng hàng hoá (tất cả chủng loại) đang lưu trữ trong hệ thống là: " + total;
+    }
+
+    @Tool("Tìm kiếm và xem chi tiết phiếu điều chuyển kho (Transfer) theo mã phiếu.")
+    public String searchTransfersByCode(String code) {
+        TransferEntity entity = transferRepository.findAll().stream()
+                .filter(t -> t.getCode().equalsIgnoreCase(code)).findFirst().orElse(null);
+        if (entity == null) return "Không tìm thấy phiếu điều chuyển: " + code;
+        return String.format("Phiếu Điều Chuyển %s:\n- Kho: %s\n- Trạng thái: %s\n- Ngày tạo: %s",
+                entity.getCode(), entity.getWarehouse().getName(), entity.getStatus(), entity.getCreatedAt());
+    }
+
+    @Tool("Tìm kiếm và xem chi tiết phiếu kiểm kê (Stocktake) theo mã phiếu.")
+    public String searchStocktakesByCode(String code) {
+        StocktakeEntity entity = stocktakeRepository.findAll().stream()
+                .filter(s -> s.getCode().equalsIgnoreCase(code)).findFirst().orElse(null);
+        if (entity == null) return "Không tìm thấy phiếu kiểm kê: " + code;
+        return String.format("Phiếu Kiểm Kê %s:\n- Kho: %s\n- Trạng thái: %s\n- Ngày tạo: %s",
+                entity.getCode(), entity.getWarehouse().getName(), entity.getStatus(), entity.getCreatedAt());
+    }
+
+    @Tool("Đếm số lượng danh mục con của một danh mục cha.")
+    public String countChildrenOfCategory(int parentId) {
+        long count = categoryRepository.findByParentId(parentId).size();
+        return "Danh mục ID=" + parentId + " có " + count + " danh mục con.";
+    }
+
+    @Tool("Liệt kê các sản phẩm chưa được phân vào bất kỳ danh mục nào (Uncategorized).")
+    public String getUncategorizedProducts() {
+        List<ProductEntity> list = productRepository.findAll().stream()
+                .filter(p -> p.getCategory() == null).limit(20).toList();
+        if (list.isEmpty()) return "Tất cả sản phẩm đều đã được phân danh mục.";
+        return "Sản phẩm chưa có danh mục:\n" + list.stream().map(p -> "- " + p.getName()).collect(Collectors.joining("\n"));
+    }
+
+    @Tool("Lấy danh sách các nhà cung cấp đang bị khoá hoặc ngưng hoạt động (Trạng thái INACTIVE).")
+    public String getInactiveSuppliers() {
+        List<SupplierEntity> list = supplierRepository.findAll().stream()
+                .filter(s -> s.getStatus() == StatusEnum.INACTIVE).limit(10).toList();
+        if (list.isEmpty()) return "Không có nhà cung cấp nào đang bị khoá.";
+        return "Nhà cung cấp INACTIVE:\n" + list.stream().map(s -> "- " + s.getName()).collect(Collectors.joining("\n"));
+    }
+
+    @Tool("Lấy danh sách các khách hàng đang bị khoá (Trạng thái INACTIVE).")
+    public String getInactiveCustomers() {
+        List<CustomerEntity> list = customerRepository.findAll().stream()
+                .filter(c -> c.getStatus() == StatusEnum.INACTIVE).limit(10).toList();
+        if (list.isEmpty()) return "Không có khách hàng nào đang bị khoá.";
+        return "Khách hàng INACTIVE:\n" + list.stream().map(c -> "- " + c.getName()).collect(Collectors.joining("\n"));
+    }
+
+    @Tool("Lấy danh sách 5 sản phẩm được tạo gần đây nhất trong hệ thống.")
+    public String getNewestProducts() {
+        List<ProductEntity> list = productRepository.findAll().stream()
+                .sorted((a,b) -> {
+                    if (a.getCreatedAt() == null) return 1;
+                    if (b.getCreatedAt() == null) return -1;
+                    return b.getCreatedAt().compareTo(a.getCreatedAt());
+                })
+                .limit(5).toList();
+        return "5 sản phẩm mới nhất:\n" + list.stream().map(p -> "- " + p.getName() + " (Tạo lúc: " + p.getCreatedAt() + ")").collect(Collectors.joining("\n"));
+    }
+
+    @Tool("Lấy thời gian hiện tại của hệ thống máy chủ.")
+    public String getSystemTime() {
+        return "Thời gian hiện tại của máy chủ là: " + LocalDateTime.now().toString();
+    }
+
+    @Tool("Lấy thông tin chi tiết của một vị trí kho dựa vào mã vị trí (ví dụ: A-01-01).")
+    public String getStorageLocationDetailsByCode(String locationCode) {
+        StorageLocationEntity loc = storageLocationRepository.findAll().stream()
+                .filter(s -> s.getLocationCode().equalsIgnoreCase(locationCode)).findFirst().orElse(null);
+        if (loc == null) return "Không tìm thấy vị trí kho: " + locationCode;
+        return String.format("Vị trí %s:\n- Kho: %s\n- Sức chứa (m3): %s\n- Trạng thái: %s",
+                loc.getLocationCode(), loc.getWarehouse().getName(), loc.getCapacity(), loc.getStatus());
+    }
+
+    @Tool("Thống kê số lượng phiếu nhập theo từng loại trạng thái (PENDING, COMPLETED, CANCELLED).")
+    public String getInboundStatusSummary() {
+        long pending = inboundRepository.findAll().stream().filter(i -> i.getStatus().name().equals("PENDING")).count();
+        long completed = inboundRepository.findAll().stream().filter(i -> i.getStatus().name().equals("COMPLETED")).count();
+        long cancelled = inboundRepository.findAll().stream().filter(i -> i.getStatus().name().equals("CANCELLED")).count();
+        return String.format("Thống kê phiếu nhập:\n- Chờ duyệt (PENDING): %d\n- Đã xong (COMPLETED): %d\n- Đã huỷ (CANCELLED): %d", pending, completed, cancelled);
+    }
+
+    @Tool("Thống kê số lượng phiếu xuất theo từng loại trạng thái (PENDING, COMPLETED, CANCELLED).")
+    public String getOutboundStatusSummary() {
+        long pending = outboundRepository.findAll().stream().filter(o -> o.getStatus().name().equals("PENDING")).count();
+        long completed = outboundRepository.findAll().stream().filter(o -> o.getStatus().name().equals("COMPLETED")).count();
+        long cancelled = outboundRepository.findAll().stream().filter(o -> o.getStatus().name().equals("CANCELLED")).count();
+        return String.format("Thống kê phiếu xuất:\n- Chờ duyệt (PENDING): %d\n- Đã xong (COMPLETED): %d\n- Đã huỷ (CANCELLED): %d", pending, completed, cancelled);
+    }
+
+    @Tool("Lấy danh sách 5 phiếu nhập kho gần đây nhất có trạng thái ĐÃ HUỶ (CANCELLED).")
+    public String getRecentCancelledInbounds() {
+        List<InboundEntity> list = inboundRepository.findAll().stream()
+                .filter(i -> i.getStatus().name().equals("CANCELLED"))
+                .sorted((a,b) -> {
+                    if (a.getCreatedAt() == null) return 1;
+                    if (b.getCreatedAt() == null) return -1;
+                    return b.getCreatedAt().compareTo(a.getCreatedAt());
+                })
+                .limit(5).toList();
+        if (list.isEmpty()) return "Không có phiếu nhập nào bị huỷ gần đây.";
+        return "5 Phiếu nhập ĐÃ HUỶ gần nhất:\n" + list.stream().map(i -> "- " + i.getCode()).collect(Collectors.joining("\n"));
+    }
+
+    @Tool("Lấy danh sách 5 phiếu xuất kho gần đây nhất có trạng thái ĐÃ HUỶ (CANCELLED).")
+    public String getRecentCancelledOutbounds() {
+        List<OutboundEntity> list = outboundRepository.findAll().stream()
+                .filter(i -> i.getStatus().name().equals("CANCELLED"))
+                .sorted((a,b) -> {
+                    if (a.getCreatedAt() == null) return 1;
+                    if (b.getCreatedAt() == null) return -1;
+                    return b.getCreatedAt().compareTo(a.getCreatedAt());
+                })
+                .limit(5).toList();
+        if (list.isEmpty()) return "Không có phiếu xuất nào bị huỷ gần đây.";
+        return "5 Phiếu xuất ĐÃ HUỶ gần nhất:\n" + list.stream().map(i -> "- " + i.getCode()).collect(Collectors.joining("\n"));
+    }
+
+    @Tool("Đếm số lượng tài khoản admin hiện tại và liệt kê thông tin chi tiết của họ.")
+    public String getAdminAccounts() {
+        List<UserEntity> admins = userRepository.findByRole(RoleEnum.ADMIN);
+        if (admins.isEmpty()) {
+            return "Hiện tại không có tài khoản ADMIN nào trong hệ thống.";
+        }
+        String data = admins.stream()
+                .map(u -> String.format("- ID: %d | Họ tên: %s | Email: %s | SĐT: %s | Trạng thái: %s",
+                        u.getId(), u.getFullName(), u.getEmail(), 
+                        u.getPhone() != null ? u.getPhone() : "N/A", 
+                        u.getIsActive() ? "Đang hoạt động" : "Bị khoá"))
+                .collect(Collectors.joining("\n"));
+        return "Hệ thống đang có tổng cộng " + admins.size() + " tài khoản ADMIN. Thông tin chi tiết:\n" + data;
+    }
 }
+
+

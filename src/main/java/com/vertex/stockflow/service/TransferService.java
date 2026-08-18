@@ -7,7 +7,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.User;
 
 public interface TransferService {
+    // Tạo phiếu chuyển kho.
     TransferResponse create(TransferCreateRequest request, User actor);
+
+    // Lấy chi tiết phiếu chuyển kho theo ID.
     TransferResponse getById(Integer id);
+
+    // Tìm kiếm danh sách phiếu chuyển kho.
     Page<TransferResponse> search(Integer warehouseId, Pageable pageable);
 }
